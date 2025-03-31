@@ -1,5 +1,31 @@
 package utils
 
+var brackets = map[byte]byte{
+	')': '(',
+	']': '[',
+	'}': '{',
+}
+
+func ValidParenthesesMap(s string) bool {
+	stack := []byte{}
+
+	for i := 0; i < len(s); i++ {
+		ch := s[i]
+
+		switch ch {
+		case '(', '[', '{':
+			stack = append(stack, ch)
+		case ')', ']', '}':
+			if len(stack) == 0 || stack[len(stack)-1] != brackets[ch] {
+				return false
+			}
+			stack = stack[:len(stack)-1]
+		}
+	}
+
+	return len(stack) == 0
+}
+
 func ValidParentheses(s string) bool {
 	// Функція повертає `true` якщо у вхідній стрічці дотримані усі правила високристання дужок
 	// Правила:

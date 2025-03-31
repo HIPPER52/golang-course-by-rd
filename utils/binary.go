@@ -33,10 +33,13 @@ func Increment(num string) int {
 	var temp int = 1
 
 	for i := len(num) - 1; i >= 0; i-- {
-		if num[i] == '1' {
+		switch num[i] {
+		case '1':
 			result += temp
+			temp *= 2
+		case '0':
+			temp *= 2
 		}
-		temp *= 2
 	}
 
 	return result + 1
