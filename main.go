@@ -2,10 +2,22 @@ package main
 
 import (
 	"fmt"
-	"lesson-03/documentstore"
+	"lesson-04/documentstore"
 )
 
 func main() {
+	store := documentstore.NewStore()
+
+	cfg := &documentstore.CollectionConfig{
+		PrimaryKey: "key",
+	}
+
+	created, collection := store.CreateCollection("testCollection", cfg)
+	if !created {
+		fmt.Println("Collection already exists.")
+		return
+	}
+
 	doc1 := documentstore.Document{
 		Fields: map[string]documentstore.DocumentField{
 			"key": {
@@ -14,7 +26,7 @@ func main() {
 			},
 			"title": {
 				Type:  documentstore.DocumentFieldTypeString,
-				Value: "Document 1",
+				Value: "First Document",
 			},
 			"views": {
 				Type:  documentstore.DocumentFieldTypeNumber,
@@ -22,6 +34,8 @@ func main() {
 			},
 		},
 	}
+
+	collection.Put(doc1)
 
 	doc2 := documentstore.Document{
 		Fields: map[string]documentstore.DocumentField{
@@ -31,7 +45,7 @@ func main() {
 			},
 			"description": {
 				Type:  documentstore.DocumentFieldTypeString,
-				Value: "Second document example",
+				Value: "Second Document",
 			},
 			"active": {
 				Type:  documentstore.DocumentFieldTypeBool,
@@ -40,28 +54,39 @@ func main() {
 		},
 	}
 
-	documentstore.Put(doc1)
-	documentstore.Put(doc2)
+	collection.Put(doc2)
 
-	if doc, ok := documentstore.Get("doc1"); ok {
-		fmt.Println("Retrieved doc1:", doc)
+	if d, ok := collection.Get("doc1"); ok {
+		fmt.Println("Retrieved doc1: ", d)
 	} else {
 		fmt.Println("doc1 not found")
 	}
 
-	fmt.Println("List documents:")
-	for _, d := range documentstore.List() {
+	fmt.Println("All documents in collection:")
+	for _, d := range collection.List() {
 		fmt.Println(d)
 	}
 
-	if documentstore.Delete("doc1") {
+	if collection.Delete("doc1") {
 		fmt.Println("doc1 deleted")
 	} else {
 		fmt.Println("doc1 not found")
 	}
 
 	fmt.Println("Documents after deletion:")
-	for _, d := range documentstore.List() {
+	for _, d := range collection.List() {
 		fmt.Println(d)
+	}
+
+	if c, ok := store.GetCollection("testCollection"); ok {
+		fmt.Println("Got collection from store:", c)
+	} else {
+		fmt.Println("Collection not found")
+	}
+
+	if store.DeleteCollection("testCollection") {
+		fmt.Println("Collection deleted from store")
+	} else {
+		fmt.Println("Failed to delete collection from store")
 	}
 }
