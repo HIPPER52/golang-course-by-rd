@@ -19,7 +19,7 @@ type Document struct {
 	Fields map[string]DocumentField
 }
 
-var documents = make(map[string]*Document)
+var documents = make(map[string]Document)
 
 func Put(doc Document) {
 	// 1. Перевірити що документ містить в мапі поле `key` типу `string`
@@ -34,7 +34,7 @@ func Put(doc Document) {
 		return
 	}
 
-	documents[key] = &doc
+	documents[key] = doc
 }
 
 func Get(key string) (*Document, bool) {
@@ -43,7 +43,7 @@ func Get(key string) (*Document, bool) {
 	// Інакше повертаємо `false` та `nil`
 	// TODO: Implement
 	doc, ok := documents[key]
-	return doc, ok
+	return &doc, ok
 }
 
 func Delete(key string) bool {
@@ -63,7 +63,7 @@ func List() []Document {
 	// TODO: Implement
 	var docs []Document
 	for _, doc := range documents {
-		docs = append(docs, *doc)
+		docs = append(docs, doc)
 	}
 	return docs
 }
