@@ -2,91 +2,75 @@ package main
 
 import (
 	"fmt"
-	"lesson-04/documentstore"
+	"lesson-05/documentstore"
+	"lesson-05/users"
+	"log"
 )
 
 func main() {
-	store := documentstore.NewStore()
-
-	cfg := &documentstore.CollectionConfig{
-		PrimaryKey: "key",
+	var store = documentstore.NewStore()
+	var config = &documentstore.CollectionConfig{
+		PrimaryKey: "id",
 	}
 
-	created, collection := store.CreateCollection("testCollection", cfg)
-	if !created {
-		fmt.Println("Collection already exists.")
-		return
+	collection, err := store.CreateCollection("users", config)
+	if err != nil {
+		fmt.Printf("Error creating collection: %v\n", err)
 	}
 
-	doc1 := documentstore.Document{
-		Fields: map[string]documentstore.DocumentField{
-			"key": {
-				Type:  documentstore.DocumentFieldTypeString,
-				Value: "doc1",
-			},
-			"title": {
-				Type:  documentstore.DocumentFieldTypeString,
-				Value: "First Document",
-			},
-			"views": {
-				Type:  documentstore.DocumentFieldTypeNumber,
-				Value: 100,
-			},
-		},
-	}
+	var userService = users.NewService(collection)
 
-	collection.Put(doc1)
+	var user1 = users.User{ID: "1", Name: "Alex"}
+	var user2 = users.User{ID: "2", Name: "John"}
 
-	doc2 := documentstore.Document{
-		Fields: map[string]documentstore.DocumentField{
-			"key": {
-				Type:  documentstore.DocumentFieldTypeString,
-				Value: "doc2",
-			},
-			"description": {
-				Type:  documentstore.DocumentFieldTypeString,
-				Value: "Second Document",
-			},
-			"active": {
-				Type:  documentstore.DocumentFieldTypeBool,
-				Value: true,
-			},
-		},
-	}
-
-	collection.Put(doc2)
-
-	if d, ok := collection.Get("doc1"); ok {
-		fmt.Println("Retrieved doc1: ", d)
+	createdUser1, err := userService.CreateUser(user1)
+	if err != nil {
+		fmt.Printf("Error creating user1: %v\n", err)
 	} else {
-		fmt.Println("doc1 not found")
+		fmt.Printf("Created user: %+v\n", createdUser1)
 	}
 
-	fmt.Println("All documents in collection:")
-	for _, d := range collection.List() {
-		fmt.Println(d)
-	}
-
-	if collection.Delete("doc1") {
-		fmt.Println("doc1 deleted")
+	createdUser2, err := userService.CreateUser(user2)
+	if err != nil {
+		fmt.Printf("Error creating user2: %v\n", err)
 	} else {
-		fmt.Println("doc1 not found")
+		fmt.Printf("Created user: %+v\n", createdUser2)
 	}
 
-	fmt.Println("Documents after deletion:")
-	for _, d := range collection.List() {
-		fmt.Println(d)
-	}
-
-	if c, ok := store.GetCollection("testCollection"); ok {
-		fmt.Println("Got collection from store:", c)
+	usersList, err := userService.ListUsers()
+	if err != nil {
+		fmt.Printf("Error list users: %v\n", err)
 	} else {
-		fmt.Println("Collection not found")
+		fmt.Println("List of users:")
+		for _, user := range usersList {
+			fmt.Printf("User: %+v\n", user)
+		}
 	}
 
-	if store.DeleteCollection("testCollection") {
-		fmt.Println("Collection deleted from store")
+	tempUser, err := userService.GetUser("1")
+	if err != nil {
+		log.Printf("Error getting user with ID '1': %v\n", err)
 	} else {
-		fmt.Println("Failed to delete collection from store")
+		fmt.Printf("Got user: %+v\n", tempUser)
+	}
+
+	if err := userService.DeleteUser(tempUser.ID); err != nil {
+		fmt.Printf("Error deleting user with ID %s: %v\n", tempUser.ID, err)
+	} else {
+		fmt.Printf("Deleted user with ID %s\n", tempUser.ID)
+	}
+
+	usersList, err = userService.ListUsers()
+	if err != nil {
+		fmt.Printf("Error list users after deletion: %v\n", err)
+	} else {
+		fmt.Println("List of users after deletion:")
+		for _, user := range usersList {
+			fmt.Printf("User: %+v\n", user)
+		}
+	}
+
+	if _, err := userService.GetUser(tempUser.ID); err != nil {
+		fmt.Printf("Error getting user: %v\n", err)
 	}
 }

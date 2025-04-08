@@ -1,7 +1,16 @@
 package documentstore
 
+import (
+	"errors"
+	"fmt"
+)
+
+var (
+	ErrCollectionAlreadyExists = errors.New("collection already exists")
+	ErrCollectionNotFound      = errors.New("collection not found")
+)
+
 type Store struct {
-	// ...
 	collections map[string]*Collection
 }
 
@@ -12,32 +21,35 @@ func NewStore() *Store {
 	}
 }
 
-func (s *Store) CreateCollection(name string, cfg *CollectionConfig) (bool, *Collection) {
+func (s *Store) CreateCollection(name string, cfg *CollectionConfig) (*Collection, error) {
 	// Створюємо нову колекцію і повертаємо `true` якщо колекція була створена
 	// Якщо ж колекція вже створеня то повертаємо `false` та nil
 	// TODO: Implement
 	if _, exists := s.collections[name]; exists {
-		return false, nil
+		return nil, fmt.Errorf("%w", ErrCollectionAlreadyExists)
 	}
 
 	collection := NewCollection(*cfg)
 	s.collections[name] = collection
 
-	return true, collection
+	return collection, nil
 }
 
-func (s *Store) GetCollection(name string) (*Collection, bool) {
+func (s *Store) GetCollection(name string) (*Collection, error) {
 	// TODO: Implement
 	collection, exists := s.collections[name]
-	return collection, exists
+	if !exists {
+		return nil, fmt.Errorf("%w", ErrCollectionNotFound)
+	}
+	return collection, nil
 }
 
-func (s *Store) DeleteCollection(name string) bool {
+func (s *Store) DeleteCollection(name string) error {
 	// TODO: Implement
-	if _, exists := s.collections[name]; exists {
-		delete(s.collections, name)
-		return true
+	if _, exists := s.collections[name]; !exists {
+		return fmt.Errorf("%w", ErrCollectionNotFound)
 	}
 
-	return false
+	delete(s.collections, name)
+	return nil
 }

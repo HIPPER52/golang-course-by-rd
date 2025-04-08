@@ -1,5 +1,16 @@
 package documentstore
 
+import (
+	"errors"
+	"fmt"
+)
+
+var (
+	ErrDocumentNotFound              = errors.New("document not found")
+	ErrDocumentMissingField          = errors.New("document does not have a key field")
+	ErrDocumentHasIncorrectTypeField = errors.New("document has a incorrect type field")
+)
+
 type CollectionConfig struct {
 	PrimaryKey string
 }
@@ -16,37 +27,47 @@ func NewCollection(cfg CollectionConfig) *Collection {
 	}
 }
 
-func (s *Collection) Put(doc Document) {
+func (s *Collection) Put(doc Document) error {
 	// Потрібно перевірити що документ містить поле `{cfg.PrimaryKey}` типу `string`
 	// TODO: Implement
 	primaryKey := s.config.PrimaryKey
 
 	keyField, exists := doc.Fields[primaryKey]
-	if !exists || keyField.Type != DocumentFieldTypeString {
-		return
+	if !exists {
+		return fmt.Errorf("%w: missing field %q", ErrDocumentMissingField, primaryKey)
+	}
+
+	if keyField.Type != DocumentFieldTypeString {
+		return fmt.Errorf("%w: expected type %q", ErrDocumentHasIncorrectTypeField, DocumentFieldTypeString)
 	}
 
 	key, ok := keyField.Value.(string)
 	if !ok {
-		return
+		return fmt.Errorf("%w: value is not a string", ErrDocumentHasIncorrectTypeField)
 	}
 
 	s.documents[key] = &doc
+	return nil
 }
 
-func (s *Collection) Get(key string) (*Document, bool) {
+func (s *Collection) Get(key string) (*Document, error) {
 	// TODO: Implement
 	doc, ok := s.documents[key]
-	return doc, ok
+	if !ok {
+		return nil, fmt.Errorf("%w", ErrDocumentNotFound)
+	}
+
+	return doc, nil
 }
 
-func (s *Collection) Delete(key string) bool {
+func (s *Collection) Delete(key string) error {
 	// TODO: Implement
-	if _, ok := s.documents[key]; ok {
-		delete(s.documents, key)
-		return true
+	if _, ok := s.documents[key]; !ok {
+		return fmt.Errorf("%w", ErrDocumentNotFound)
 	}
-	return false
+
+	delete(s.documents, key)
+	return nil
 }
 
 func (s *Collection) List() []Document {
