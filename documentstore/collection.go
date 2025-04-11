@@ -3,6 +3,7 @@ package documentstore
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 )
 
 var (
@@ -16,21 +17,21 @@ type CollectionConfig struct {
 }
 
 type Collection struct {
-	config    CollectionConfig
-	documents map[string]*Document
+	Config    CollectionConfig
+	Documents map[string]*Document
 }
 
 func NewCollection(cfg CollectionConfig) *Collection {
 	return &Collection{
-		config:    cfg,
-		documents: make(map[string]*Document),
+		Config:    cfg,
+		Documents: make(map[string]*Document),
 	}
 }
 
 func (s *Collection) Put(doc Document) error {
 	// Потрібно перевірити що документ містить поле `{cfg.PrimaryKey}` типу `string`
 	// TODO: Implement
-	primaryKey := s.config.PrimaryKey
+	primaryKey := s.Config.PrimaryKey
 
 	keyField, exists := doc.Fields[primaryKey]
 	if !exists {
@@ -46,13 +47,14 @@ func (s *Collection) Put(doc Document) error {
 		return fmt.Errorf("%w: value is not a string", ErrDocumentHasIncorrectTypeField)
 	}
 
-	s.documents[key] = &doc
+	slog.Info("Document added/updated", "collection", s.Config.PrimaryKey, "key", key)
+	s.Documents[key] = &doc
 	return nil
 }
 
 func (s *Collection) Get(key string) (*Document, error) {
 	// TODO: Implement
-	doc, ok := s.documents[key]
+	doc, ok := s.Documents[key]
 	if !ok {
 		return nil, fmt.Errorf("%w", ErrDocumentNotFound)
 	}
@@ -62,18 +64,19 @@ func (s *Collection) Get(key string) (*Document, error) {
 
 func (s *Collection) Delete(key string) error {
 	// TODO: Implement
-	if _, ok := s.documents[key]; !ok {
+	if _, ok := s.Documents[key]; !ok {
 		return fmt.Errorf("%w", ErrDocumentNotFound)
 	}
 
-	delete(s.documents, key)
+	slog.Info("Document deleted", "collection", s.Config.PrimaryKey, "key", key)
+	delete(s.Documents, key)
 	return nil
 }
 
 func (s *Collection) List() []Document {
 	// TODO: Implement
 	var docs []Document
-	for _, doc := range s.documents {
+	for _, doc := range s.Documents {
 		docs = append(docs, *doc)
 	}
 	return docs

@@ -3,7 +3,7 @@ package users
 import (
 	"errors"
 	"fmt"
-	"lesson-05/documentstore"
+	"lesson-06/documentstore"
 )
 
 var (

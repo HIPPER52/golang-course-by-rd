@@ -2,75 +2,88 @@ package main
 
 import (
 	"fmt"
-	"lesson-05/documentstore"
-	"lesson-05/users"
-	"log"
+	"lesson-06/documentstore"
+	"lesson-06/users"
+	"log/slog"
+	"os"
 )
 
+func init() {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+	slog.SetDefault(logger)
+}
+
 func main() {
-	var store = documentstore.NewStore()
-	var config = &documentstore.CollectionConfig{
-		PrimaryKey: "id",
-	}
+	store := documentstore.NewStore()
 
-	collection, err := store.CreateCollection("users", config)
+	usersCfg := &documentstore.CollectionConfig{PrimaryKey: "id"}
+	usersColl, err := store.CreateCollection("users", usersCfg)
 	if err != nil {
-		fmt.Printf("Error creating collection: %v\n", err)
+		slog.Error("failed to create users collection", "error", err)
+		os.Exit(1)
 	}
 
-	var userService = users.NewService(collection)
+	userService := users.NewService(usersColl)
 
-	var user1 = users.User{ID: "1", Name: "Alex"}
-	var user2 = users.User{ID: "2", Name: "John"}
+	user1 := users.User{ID: "1", Name: "Alex"}
+	user2 := users.User{ID: "2", Name: "John"}
 
-	createdUser1, err := userService.CreateUser(user1)
+	if _, err := userService.CreateUser(user1); err != nil {
+		slog.Error("failed to create Alex", "error", err)
+	}
+	if _, err := userService.CreateUser(user2); err != nil {
+		slog.Error("failed to create John", "error", err)
+	}
+
+	filename := "store_dump.json"
+	if err := store.DumpToFile(filename); err != nil {
+		slog.Error("failed to dump store to file", "file", filename, "error", err)
+	} else {
+		slog.Info("store dumped to file", "file", filename)
+	}
+
+	loadedStore, err := documentstore.NewStoreFromFile(filename)
 	if err != nil {
-		fmt.Printf("Error creating user1: %v\n", err)
-	} else {
-		fmt.Printf("Created user: %+v\n", createdUser1)
+		slog.Error("failed to load store from file", "file", filename, "error", err)
+		os.Exit(1)
 	}
+	slog.Info("store loaded from file", "file", filename)
 
-	createdUser2, err := userService.CreateUser(user2)
+	loadedUsersColl, err := loadedStore.GetCollection("users")
 	if err != nil {
-		fmt.Printf("Error creating user2: %v\n", err)
-	} else {
-		fmt.Printf("Created user: %+v\n", createdUser2)
+		slog.Error("failed to get users collection from loaded store", "error", err)
+		os.Exit(1)
 	}
 
-	usersList, err := userService.ListUsers()
+	loadedUserService := users.NewService(loadedUsersColl)
+
+	usersList, err := loadedUserService.ListUsers()
 	if err != nil {
-		fmt.Printf("Error list users: %v\n", err)
-	} else {
-		fmt.Println("List of users:")
-		for _, user := range usersList {
-			fmt.Printf("User: %+v\n", user)
-		}
+		slog.Error("failed to list users from loaded store", "error", err)
+		os.Exit(1)
 	}
 
-	tempUser, err := userService.GetUser("1")
+	fmt.Println("Users from loaded store:")
+	for _, u := range usersList {
+		fmt.Printf("User: ID=%s, Name=%s\n", u.ID, u.Name)
+	}
+
+	if err := loadedUserService.DeleteUser(user1.ID); err != nil {
+		slog.Error("failed to delete user", "userID", user1.ID, "error", err)
+	} else {
+		slog.Info("user deleted", "userID", user1.ID)
+	}
+
+	usersList, err = loadedUserService.ListUsers()
 	if err != nil {
-		log.Printf("Error getting user with ID '1': %v\n", err)
-	} else {
-		fmt.Printf("Got user: %+v\n", tempUser)
+		slog.Error("failed to list users after deletion", "error", err)
+		os.Exit(1)
 	}
 
-	if err := userService.DeleteUser(tempUser.ID); err != nil {
-		fmt.Printf("Error deleting user with ID %s: %v\n", tempUser.ID, err)
-	} else {
-		fmt.Printf("Deleted user with ID %s\n", tempUser.ID)
-	}
-
-	usersList, err = userService.ListUsers()
-	if err != nil {
-		fmt.Printf("Error list users after deletion: %v\n", err)
-	} else {
-		fmt.Println("List of users after deletion:")
-		for _, user := range usersList {
-			fmt.Printf("User: %+v\n", user)
-		}
-	}
-
-	if _, err := userService.GetUser(tempUser.ID); err != nil {
-		fmt.Printf("Error getting user: %v\n", err)
+	fmt.Println("Users after deletion:")
+	for _, u := range usersList {
+		fmt.Printf("User: ID=%s, Name=%s\n", u.ID, u.Name)
 	}
 }
