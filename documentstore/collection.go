@@ -43,7 +43,7 @@ func (s *Collection) Put(doc Document) error {
 
 	key, ok := keyField.Value.(string)
 	if !ok {
-		return fmt.Errorf("%w: value is not a string", ErrDocumentHasIncorrectTypeField)
+		return fmt.Errorf("%w: keyField is not a string", ErrDocumentHasIncorrectTypeField)
 	}
 
 	s.documents[key] = &doc
@@ -54,7 +54,7 @@ func (s *Collection) Get(key string) (*Document, error) {
 	// TODO: Implement
 	doc, ok := s.documents[key]
 	if !ok {
-		return nil, fmt.Errorf("%w", ErrDocumentNotFound)
+		return nil, ErrDocumentNotFound
 	}
 
 	return doc, nil
@@ -63,7 +63,7 @@ func (s *Collection) Get(key string) (*Document, error) {
 func (s *Collection) Delete(key string) error {
 	// TODO: Implement
 	if _, ok := s.documents[key]; !ok {
-		return fmt.Errorf("%w", ErrDocumentNotFound)
+		return ErrDocumentNotFound
 	}
 
 	delete(s.documents, key)
