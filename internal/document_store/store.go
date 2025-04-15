@@ -58,10 +58,6 @@ func (s *Store) DeleteCollection(name string) error {
 }
 
 func NewStoreFromDump(dump []byte) (*Store, error) {
-	// Функція повинна створити на проініціалізувати новий `Store`
-	// зі всіма колекціями да даними з вхідного дампу.
-
-	// TODO: Implement
 	var s Store
 	if err := json.Unmarshal(dump, &s); err != nil {
 		return nil, fmt.Errorf("%w", ErrUnmarshalDump)
@@ -70,9 +66,6 @@ func NewStoreFromDump(dump []byte) (*Store, error) {
 }
 
 func (s *Store) Dump() ([]byte, error) {
-	// Методи повинен віддати дамп нашого стору який включані дані про колекції та документ
-
-	// TODO: Implement
 	data, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("%w", ErrMarshalStore)
@@ -80,11 +73,7 @@ func (s *Store) Dump() ([]byte, error) {
 	return data, nil
 }
 
-// Значення яке повертає метод `store.Dump()` має без помилок оброблятись функцією `NewStoreFromDump`
-
 func NewStoreFromFile(filename string) (*Store, error) {
-	// Робить те ж саме що і функція `NewStoreFromDump`, але сам дамп має діставатись з файлу
-	// TODO: Implement
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("%w", ErrReadDumpFromFile)
@@ -95,9 +84,6 @@ func NewStoreFromFile(filename string) (*Store, error) {
 }
 
 func (s *Store) DumpToFile(filename string) error {
-	// Робить те ж саме що і метод  `Dump`, але записує у файл замість того щоб повертати сам дамп
-
-	// TODO: Implement
 	data, err := s.Dump()
 	if err != nil {
 		return err
