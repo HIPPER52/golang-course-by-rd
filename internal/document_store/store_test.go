@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"lesson_07/internal/document_store"
+	"lesson_09/internal/document_store"
 )
 
 func TestCreateAndGetCollection(t *testing.T) {

@@ -1,25 +1,24 @@
-package documentstore_test
+package documentstore
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"lesson_07/internal/document_store"
 )
 
 func TestPutAndGet(t *testing.T) {
-	collection := documentstore.NewCollection(documentstore.CollectionConfig{
+	collection := NewCollection(CollectionConfig{
 		PrimaryKey: "id",
 	})
 
-	doc := documentstore.Document{
-		Fields: map[string]documentstore.DocumentField{
+	doc := Document{
+		Fields: map[string]DocumentField{
 			"id": {
-				Type:  documentstore.DocumentFieldTypeString,
+				Type:  DocumentFieldTypeString,
 				Value: "1",
 			},
 			"name": {
-				Type:  documentstore.DocumentFieldTypeString,
+				Type:  DocumentFieldTypeString,
 				Value: "Alex",
 			},
 		},
@@ -34,44 +33,44 @@ func TestPutAndGet(t *testing.T) {
 }
 
 func TestPut_InvalidPrimaryKey(t *testing.T) {
-	collection := documentstore.NewCollection(documentstore.CollectionConfig{
+	collection := NewCollection(CollectionConfig{
 		PrimaryKey: "id",
 	})
 
-	docMissing := documentstore.Document{
-		Fields: map[string]documentstore.DocumentField{
+	docMissing := Document{
+		Fields: map[string]DocumentField{
 			"name": {
-				Type:  documentstore.DocumentFieldTypeString,
+				Type:  DocumentFieldTypeString,
 				Value: "Alex",
 			},
 		},
 	}
 
 	err := collection.Put(docMissing)
-	require.ErrorIs(t, err, documentstore.ErrDocumentMissingField)
+	require.ErrorIs(t, err, ErrDocumentMissingField)
 
-	docBadType := documentstore.Document{
-		Fields: map[string]documentstore.DocumentField{
+	docBadType := Document{
+		Fields: map[string]DocumentField{
 			"id": {
-				Type:  documentstore.DocumentFieldTypeNumber,
+				Type:  DocumentFieldTypeNumber,
 				Value: 123,
 			},
 		},
 	}
 
 	err = collection.Put(docBadType)
-	require.ErrorIs(t, err, documentstore.ErrDocumentHasIncorrectTypeField)
+	require.ErrorIs(t, err, ErrDocumentHasIncorrectTypeField)
 }
 
 func TestDelete(t *testing.T) {
-	collection := documentstore.NewCollection(documentstore.CollectionConfig{
+	collection := NewCollection(CollectionConfig{
 		PrimaryKey: "id",
 	})
 
-	doc := documentstore.Document{
-		Fields: map[string]documentstore.DocumentField{
+	doc := Document{
+		Fields: map[string]DocumentField{
 			"id": {
-				Type:  documentstore.DocumentFieldTypeString,
+				Type:  DocumentFieldTypeString,
 				Value: "2",
 			},
 		},
@@ -83,27 +82,27 @@ func TestDelete(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = collection.Get("2")
-	require.ErrorIs(t, err, documentstore.ErrDocumentNotFound)
+	require.ErrorIs(t, err, ErrDocumentNotFound)
 }
 
 func TestList(t *testing.T) {
-	collection := documentstore.NewCollection(documentstore.CollectionConfig{
+	collection := NewCollection(CollectionConfig{
 		PrimaryKey: "id",
 	})
 
-	docs := []documentstore.Document{
+	docs := []Document{
 		{
-			Fields: map[string]documentstore.DocumentField{
+			Fields: map[string]DocumentField{
 				"id": {
-					Type:  documentstore.DocumentFieldTypeString,
+					Type:  DocumentFieldTypeString,
 					Value: "a1",
 				},
 			},
 		},
 		{
-			Fields: map[string]documentstore.DocumentField{
+			Fields: map[string]DocumentField{
 				"id": {
-					Type:  documentstore.DocumentFieldTypeString,
+					Type:  DocumentFieldTypeString,
 					Value: "b2",
 				},
 			},
@@ -116,4 +115,72 @@ func TestList(t *testing.T) {
 
 	list := collection.List()
 	require.Len(t, list, 2)
+}
+
+func TestCreateIndex(t *testing.T) {
+	coll := NewCollection(CollectionConfig{PrimaryKey: "id"})
+
+	coll.Put(Document{Fields: map[string]DocumentField{
+		"id":   {Type: DocumentFieldTypeString, Value: "1"},
+		"name": {Type: DocumentFieldTypeString, Value: "Alice"},
+	}})
+	coll.Put(Document{Fields: map[string]DocumentField{
+		"id":   {Type: DocumentFieldTypeString, Value: "2"},
+		"name": {Type: DocumentFieldTypeString, Value: "Bob"},
+	}})
+
+	err := coll.CreateIndex("name")
+	if err != nil {
+		t.Fatalf("expected no error creating index, got: %v", err)
+	}
+
+	if _, exists := coll.indexes["name"]; !exists {
+		t.Fatalf("expected index for field 'name' to exist")
+	}
+}
+
+func TestQueryWithIndex(t *testing.T) {
+	coll := NewCollection(CollectionConfig{PrimaryKey: "id"})
+
+	coll.Put(Document{Fields: map[string]DocumentField{
+		"id":   {Type: DocumentFieldTypeString, Value: "1"},
+		"name": {Type: DocumentFieldTypeString, Value: "Alice"},
+	}})
+	coll.Put(Document{Fields: map[string]DocumentField{
+		"id":   {Type: DocumentFieldTypeString, Value: "2"},
+		"name": {Type: DocumentFieldTypeString, Value: "Bob"},
+	}})
+
+	err := coll.CreateIndex("name")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	params := QueryParams{}
+	docs, err := coll.Query("name", params)
+	if err != nil {
+		t.Fatalf("unexpected error querying index: %v", err)
+	}
+
+	if len(docs) != 2 {
+		t.Fatalf("expected 2 documents, got %d", len(docs))
+	}
+}
+
+func TestDeleteIndex(t *testing.T) {
+	coll := NewCollection(CollectionConfig{PrimaryKey: "id"})
+
+	err := coll.CreateIndex("name")
+	if err != nil {
+		t.Fatalf("unexpected error creating index: %v", err)
+	}
+
+	err = coll.DeleteIndex("name")
+	if err != nil {
+		t.Fatalf("unexpected error deleting index: %v", err)
+	}
+
+	if _, exists := coll.indexes["name"]; exists {
+		t.Fatalf("expected index 'name' to be deleted")
+	}
 }

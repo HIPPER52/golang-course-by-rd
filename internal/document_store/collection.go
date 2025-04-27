@@ -11,6 +11,8 @@ var (
 	ErrDocumentNotFound              = errors.New("document not found")
 	ErrDocumentMissingField          = errors.New("document does not have a key field")
 	ErrDocumentHasIncorrectTypeField = errors.New("document has a incorrect type field")
+	ErrIndexAlreadyExists            = errors.New("index already exists")
+	ErrIndexNotFound                 = errors.New("index not found")
 )
 
 type CollectionConfig struct {
@@ -20,18 +22,84 @@ type CollectionConfig struct {
 type Collection struct {
 	config    CollectionConfig     `json:"config"`
 	documents map[string]*Document `json:"documents"`
+	indexes   map[string]*Index    `json:"-"`
 }
 
 func NewCollection(cfg CollectionConfig) *Collection {
 	return &Collection{
 		config:    cfg,
 		documents: make(map[string]*Document),
+		indexes:   make(map[string]*Index),
 	}
 }
 
+type QueryParams struct {
+	Desc     bool    // Визначає в якому порядку повертати дані
+	MinValue *string // Визначає мінімальне значення поля для фільтрації
+	MaxValue *string // Визначає максимальне значення поля для фільтрації
+}
+
+func (s *Collection) CreateIndex(fieldName string) error {
+	if s.indexes == nil {
+		s.indexes = make(map[string]*Index)
+	}
+
+	if _, exists := s.indexes[fieldName]; exists {
+		return ErrIndexAlreadyExists
+	}
+
+	idx := &Index{}
+	s.indexes[fieldName] = idx
+
+	for _, doc := range s.documents {
+		field, exists := doc.Fields[fieldName]
+		if !exists || field.Type != DocumentFieldTypeString {
+			continue
+		}
+		strValue, ok := field.Value.(string)
+		if !ok {
+			continue
+		}
+		idx.Insert(strValue, doc)
+	}
+
+	return nil
+}
+
+func (s *Collection) DeleteIndex(fieldName string) error {
+	if s.indexes == nil {
+		return ErrIndexNotFound
+	}
+
+	if _, exists := s.indexes[fieldName]; !exists {
+		return ErrIndexNotFound
+	}
+
+	delete(s.indexes, fieldName)
+	return nil
+}
+
+func (s *Collection) Query(fieldName string, params QueryParams) ([]Document, error) {
+	if s.indexes == nil {
+		return nil, ErrIndexNotFound
+	}
+
+	idx, exists := s.indexes[fieldName]
+	if !exists {
+		return nil, ErrIndexNotFound
+	}
+
+	docsPtrs := idx.RangeQuery(params.MinValue, params.MaxValue, params.Desc)
+
+	var docs []Document
+	for _, ptr := range docsPtrs {
+		docs = append(docs, *ptr)
+	}
+
+	return docs, nil
+}
+
 func (s *Collection) Put(doc Document) error {
-	// Потрібно перевірити що документ містить поле `{cfg.PrimaryKey}` типу `string`
-	// TODO: Implement
 	primaryKey := s.config.PrimaryKey
 
 	keyField, exists := doc.Fields[primaryKey]
@@ -48,13 +116,12 @@ func (s *Collection) Put(doc Document) error {
 		return fmt.Errorf("%w: keyField is not a string", ErrDocumentHasIncorrectTypeField)
 	}
 
-	slog.Info("Document added/updated", "collection", s.config.PrimaryKey, "key", key)
+	//slog.Info("Document added/updated", "collection", s.config.PrimaryKey, "key", key)
 	s.documents[key] = &doc
 	return nil
 }
 
 func (s *Collection) Get(key string) (*Document, error) {
-	// TODO: Implement
 	doc, ok := s.documents[key]
 	if !ok {
 		return nil, ErrDocumentNotFound
@@ -64,7 +131,6 @@ func (s *Collection) Get(key string) (*Document, error) {
 }
 
 func (s *Collection) Delete(key string) error {
-	// TODO: Implement
 	if _, ok := s.documents[key]; !ok {
 		return ErrDocumentNotFound
 	}
@@ -75,7 +141,6 @@ func (s *Collection) Delete(key string) error {
 }
 
 func (s *Collection) List() []Document {
-	// TODO: Implement
 	var docs []Document
 	for _, doc := range s.documents {
 		docs = append(docs, *doc)
