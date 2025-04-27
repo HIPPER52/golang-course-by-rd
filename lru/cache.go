@@ -1,6 +1,6 @@
 package lru
 
-type LruCache interface {
+type LRUCache interface {
 	Put(key, value string)
 	Get(key string) (string, bool)
 }
@@ -19,7 +19,7 @@ type lruCache struct {
 	tail     *Node
 }
 
-func NewLruCache(capacity int) LruCache {
+func NewLruCache(capacity int) LRUCache {
 	return &lruCache{
 		capacity: capacity,
 		cache:    make(map[string]*Node),
@@ -39,8 +39,8 @@ func (lc *lruCache) Put(key, value string) {
 	}
 
 	if len(lc.cache) >= lc.capacity {
-		delete(lc.cache, lc.tail.key)
 		lc.removeNode(lc.tail)
+		delete(lc.cache, lc.tail.key)
 	}
 
 	lc.addToFront(newNode)
@@ -72,6 +72,9 @@ func (lc *lruCache) removeNode(node *Node) {
 	} else {
 		lc.tail = node.prev
 	}
+
+	node.prev = nil
+	node.next = nil
 }
 
 func (lc *lruCache) addToFront(node *Node) {
