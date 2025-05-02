@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sync"
 )
 
 var (
@@ -18,6 +19,7 @@ var (
 )
 
 type Store struct {
+	mx          sync.RWMutex
 	Collections map[string]*Collection `json:"collections"`
 }
 
@@ -28,6 +30,9 @@ func NewStore() *Store {
 }
 
 func (s *Store) CreateCollection(name string, cfg *CollectionConfig) (*Collection, error) {
+	s.mx.Lock()
+	defer s.mx.Unlock()
+
 	if _, exists := s.Collections[name]; exists {
 		return nil, fmt.Errorf("%w", ErrCollectionAlreadyExists)
 	}
@@ -40,6 +45,9 @@ func (s *Store) CreateCollection(name string, cfg *CollectionConfig) (*Collectio
 }
 
 func (s *Store) GetCollection(name string) (*Collection, error) {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+
 	collection, exists := s.Collections[name]
 	if !exists {
 		return nil, fmt.Errorf("%w", ErrCollectionNotFound)
@@ -48,6 +56,9 @@ func (s *Store) GetCollection(name string) (*Collection, error) {
 }
 
 func (s *Store) DeleteCollection(name string) error {
+	s.mx.Lock()
+	defer s.mx.Unlock()
+
 	if _, exists := s.Collections[name]; !exists {
 		return fmt.Errorf("%w", ErrCollectionNotFound)
 	}

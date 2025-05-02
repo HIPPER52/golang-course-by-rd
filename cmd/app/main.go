@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
-	"lesson_09/internal/document_store"
+	"lesson_11/internal/document_store"
 	"log/slog"
+	"math/rand"
 	"os"
+	"strconv"
+	"sync"
 )
 
 func init() {
@@ -15,47 +18,52 @@ func init() {
 }
 
 func main() {
-	collection := documentstore.NewCollection(documentstore.CollectionConfig{
-		PrimaryKey: "id",
-	})
-
-	docs := []documentstore.Document{
-		{Fields: map[string]documentstore.DocumentField{
-			"id":   {Type: documentstore.DocumentFieldTypeString, Value: "1"},
-			"name": {Type: documentstore.DocumentFieldTypeString, Value: "Alice"},
-		}},
-		{Fields: map[string]documentstore.DocumentField{
-			"id":   {Type: documentstore.DocumentFieldTypeString, Value: "2"},
-			"name": {Type: documentstore.DocumentFieldTypeString, Value: "Bob"},
-		}},
-		{Fields: map[string]documentstore.DocumentField{
-			"id":   {Type: documentstore.DocumentFieldTypeString, Value: "3"},
-			"name": {Type: documentstore.DocumentFieldTypeString, Value: "John"},
-		}},
-	}
-
-	for _, doc := range docs {
-		if err := collection.Put(doc); err != nil {
-			slog.Error("Failed to put document", "error", err)
-		}
-	}
-
-	if err := collection.CreateIndex("name"); err != nil {
-		slog.Error("Failed to create index", "error", err)
-	}
-
-	queryParams := documentstore.QueryParams{
-		Desc: false,
-	}
-	resultDocs, err := collection.Query("name", queryParams)
+	store := documentstore.NewStore()
+	usersColl, err := store.CreateCollection("users", &documentstore.CollectionConfig{PrimaryKey: "id"})
 	if err != nil {
-		slog.Error("Failed to query documents", "error", err)
-		return
+		slog.Error("failed to create collection", "error", err)
+		os.Exit(1)
 	}
 
-	fmt.Println("Documents sorted by name:")
-	for _, doc := range resultDocs {
-		nameField := doc.Fields["name"]
-		fmt.Printf("- Name: %v\n", nameField.Value)
+	var wg sync.WaitGroup
+
+	for i := 0; i < 1000; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+
+			userID := strconv.Itoa(i)
+			doc := documentstore.Document{
+				Fields: map[string]documentstore.DocumentField{
+					"id": {
+						Type:  documentstore.DocumentFieldTypeString,
+						Value: userID,
+					},
+					"name": {
+						Type:  documentstore.DocumentFieldTypeString,
+						Value: "User" + userID,
+					},
+				},
+			}
+
+			action := rand.Intn(3)
+			switch action {
+			case 0:
+				if err := usersColl.Put(doc); err != nil {
+					slog.Warn("put failed", "id", userID, "error", err)
+				}
+			case 1:
+				if _, err := usersColl.Get(userID); err != nil {
+					slog.Warn("get failed", "id", userID, "error", err)
+				}
+			case 2:
+				if err := usersColl.Delete(userID); err != nil {
+					slog.Warn("delete failed", "id", userID, "error", err)
+				}
+			}
+		}(i)
 	}
+
+	wg.Wait()
+	fmt.Println("Finished")
 }

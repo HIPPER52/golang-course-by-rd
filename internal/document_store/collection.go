@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 )
 
 var (
@@ -20,6 +21,7 @@ type CollectionConfig struct {
 }
 
 type Collection struct {
+	mx        sync.RWMutex
 	config    CollectionConfig     `json:"config"`
 	documents map[string]*Document `json:"documents"`
 	indexes   map[string]*Index    `json:"-"`
@@ -100,6 +102,9 @@ func (s *Collection) Query(fieldName string, params QueryParams) ([]Document, er
 }
 
 func (s *Collection) Put(doc Document) error {
+	s.mx.Lock()
+	defer s.mx.Unlock()
+
 	primaryKey := s.config.PrimaryKey
 
 	keyField, exists := doc.Fields[primaryKey]
@@ -122,6 +127,9 @@ func (s *Collection) Put(doc Document) error {
 }
 
 func (s *Collection) Get(key string) (*Document, error) {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+
 	doc, ok := s.documents[key]
 	if !ok {
 		return nil, ErrDocumentNotFound
@@ -131,6 +139,9 @@ func (s *Collection) Get(key string) (*Document, error) {
 }
 
 func (s *Collection) Delete(key string) error {
+	s.mx.Lock()
+	defer s.mx.Unlock()
+
 	if _, ok := s.documents[key]; !ok {
 		return ErrDocumentNotFound
 	}
@@ -141,6 +152,9 @@ func (s *Collection) Delete(key string) error {
 }
 
 func (s *Collection) List() []Document {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+
 	var docs []Document
 	for _, doc := range s.documents {
 		docs = append(docs, *doc)
