@@ -1,140 +1,75 @@
 package documentstore
 
-type IndexNode struct {
-	Key   string
-	Docs  []*Document
-	Left  *IndexNode
-	Right *IndexNode
+import (
+	"github.com/google/btree"
+)
+
+type indexedItem struct {
+	key  string
+	docs []*Document
 }
 
-func NewIndexNode() *IndexNode {
-	return &IndexNode{
-		Key:   "",
-		Docs:  make([]*Document, 0),
-		Left:  nil,
-		Right: nil,
-	}
+func (a indexedItem) Less(b indexedItem) bool {
+	return a.key < b.key
 }
 
 type Index struct {
-	Root *IndexNode
+	tree *btree.BTreeG[indexedItem]
+}
+
+func NewIndex() *Index {
+	return &Index{
+		tree: btree.NewG[indexedItem](2, func(a, b indexedItem) bool {
+			return a.Less(b)
+		}),
+	}
 }
 
 func (idx *Index) Insert(key string, doc *Document) {
-	idx.Root = idx.insertRecursive(idx.Root, key, doc)
+	item := indexedItem{key: key}
+	existing, found := idx.tree.Get(item)
+	if found {
+		existing.docs = append(existing.docs, doc)
+		idx.tree.ReplaceOrInsert(existing)
+	} else {
+		idx.tree.ReplaceOrInsert(indexedItem{key: key, docs: []*Document{doc}})
+	}
 }
 
 func (idx *Index) Delete(key string) {
-	idx.Root = idx.deleteRecursive(idx.Root, key)
+	idx.tree.Delete(indexedItem{key: key})
 }
 
 func (idx *Index) RangeQuery(min, max *string, desc bool) []*Document {
 	var result []*Document
-	idx.rangeQueryRecursive(idx.Root, min, max, desc, &result)
-	return result
-}
 
-func (idx *Index) insertRecursive(node *IndexNode, key string, doc *Document) *IndexNode {
-	if idx.Root == nil {
-		newNode := &IndexNode{
-			Key:  key,
-			Docs: []*Document{doc},
-		}
-		idx.Root = newNode
-		return newNode
+	start := indexedItem{}
+	if min != nil {
+		start.key = *min
 	}
 
-	if node == nil {
-		newNode := &IndexNode{
-			Key:  key,
-			Docs: []*Document{doc},
-		}
-		return newNode
-	}
-
-	if key < node.Key {
-		newLeft := idx.insertRecursive(node.Left, key, doc)
-		node.Left = newLeft
-	} else if key > node.Key {
-		newRight := idx.insertRecursive(node.Right, key, doc)
-		node.Right = newRight
-	} else {
-		node.Docs = append(node.Docs, doc)
-	}
-
-	return node
-}
-
-func (idx *Index) deleteRecursive(node *IndexNode, key string) *IndexNode {
-	if node == nil {
-		return nil
-	}
-
-	if key < node.Key {
-		node.Left = idx.deleteRecursive(node.Left, key)
-	} else if key > node.Key {
-		node.Right = idx.deleteRecursive(node.Right, key)
-	} else {
-		if node.Left == nil {
-			return node.Right
-		}
-		if node.Right == nil {
-			return node.Left
-		}
-
-		minLargerNode := idx.findMin(node.Right)
-		node.Key = minLargerNode.Key
-		node.Docs = minLargerNode.Docs
-		node.Right = idx.deleteRecursive(node.Right, minLargerNode.Key)
-	}
-
-	return node
-}
-
-func (idx *Index) findMin(node *IndexNode) *IndexNode {
-	current := node
-	for current.Left != nil {
-		current = current.Left
-	}
-	return current
-}
-
-func (idx *Index) rangeQueryRecursive(node *IndexNode, min, max *string, desc bool, result *[]*Document) {
-	if node == nil {
-		return
-	}
-
-	if min != nil && node.Key < *min {
-		idx.rangeQueryRecursive(node.Right, min, max, desc, result)
-		return
-	}
-
-	if max != nil && node.Key > *max {
-		idx.rangeQueryRecursive(node.Left, min, max, desc, result)
-		return
+	end := indexedItem{}
+	if max != nil {
+		end.key = *max
 	}
 
 	if desc {
-		idx.rangeQueryRecursive(node.Right, min, max, desc, result)
-		if idx.keyInRange(node.Key, min, max) {
-			*result = append(*result, node.Docs...)
-		}
-		idx.rangeQueryRecursive(node.Left, min, max, desc, result)
+		idx.tree.DescendLessOrEqual(end, func(i indexedItem) bool {
+			if min != nil && i.key < *min {
+				return false
+			}
+			result = append(result, i.docs...)
+			return true
+		})
 	} else {
-		idx.rangeQueryRecursive(node.Left, min, max, desc, result)
-		if idx.keyInRange(node.Key, min, max) {
-			*result = append(*result, node.Docs...)
-		}
-		idx.rangeQueryRecursive(node.Right, min, max, desc, result)
+		idx.tree.AscendGreaterOrEqual(start, func(i indexedItem) bool {
+			if max != nil && i.key > *max {
+				return false
+			}
+			result = append(result, i.docs...)
+			return true
+		})
 	}
-}
 
-func (idx *Index) keyInRange(key string, min, max *string) bool {
-	if min != nil && key < *min {
-		return false
-	}
-	if max != nil && key > *max {
-		return false
-	}
-	return true
+	return result
 }

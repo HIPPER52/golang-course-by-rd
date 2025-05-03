@@ -48,7 +48,7 @@ func (s *Collection) CreateIndex(fieldName string) error {
 		return ErrIndexAlreadyExists
 	}
 
-	idx := &Index{}
+	idx := NewIndex()
 	s.indexes[fieldName] = idx
 
 	for _, doc := range s.documents {

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// 358977 ns/op
+// 368896 ns/op
 func BenchmarkQueryWithoutIndex(b *testing.B) {
 	coll := NewCollection(CollectionConfig{PrimaryKey: "id"})
 
@@ -34,7 +34,7 @@ func BenchmarkQueryWithoutIndex(b *testing.B) {
 	}
 }
 
-// 38620 ns/op
+// 48601 ns/op
 func BenchmarkQueryWithIndex(b *testing.B) {
 	coll := NewCollection(CollectionConfig{PrimaryKey: "id"})
 
