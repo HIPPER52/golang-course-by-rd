@@ -116,8 +116,27 @@ func (s *Collection) Put(doc Document) error {
 		return fmt.Errorf("%w: keyField is not a string", ErrDocumentHasIncorrectTypeField)
 	}
 
+	if oldDoc, exists := s.documents[key]; exists {
+		for fieldName, idx := range s.indexes {
+			if field, ok := oldDoc.Fields[fieldName]; ok && field.Type == DocumentFieldTypeString {
+				if strValue, ok := field.Value.(string); ok {
+					idx.RemoveDocument(strValue, key)
+				}
+			}
+		}
+	}
+
 	//slog.Info("Document added/updated", "collection", s.config.PrimaryKey, "key", key)
 	s.documents[key] = &doc
+
+	for fieldName, idx := range s.indexes {
+		if field, ok := doc.Fields[fieldName]; ok && field.Type == DocumentFieldTypeString {
+			if strValue, ok := field.Value.(string); ok {
+				idx.Insert(strValue, &doc)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -135,13 +154,22 @@ func (s *Collection) Delete(key string) error {
 		return ErrDocumentNotFound
 	}
 
+	doc := s.documents[key]
+	for fieldName, idx := range s.indexes {
+		if field, ok := doc.Fields[fieldName]; ok && field.Type == DocumentFieldTypeString {
+			if strValue, ok := field.Value.(string); ok {
+				idx.RemoveDocument(strValue, key)
+			}
+		}
+	}
+
 	slog.Info("Document deleted", "collection", s.config.PrimaryKey, "key", key)
 	delete(s.documents, key)
 	return nil
 }
 
 func (s *Collection) List() []Document {
-	var docs []Document
+	docs := make([]Document, 0, len(s.documents))
 	for _, doc := range s.documents {
 		docs = append(docs, *doc)
 	}

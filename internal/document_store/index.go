@@ -36,8 +36,29 @@ func (idx *Index) Insert(key string, doc *Document) {
 	}
 }
 
-func (idx *Index) Delete(key string) {
-	idx.tree.Delete(indexedItem{key: key})
+func (idx *Index) RemoveDocument(indexValue string, docID string) {
+	probe := indexedItem{key: indexValue}
+
+	item, found := idx.tree.Get(probe)
+	if !found {
+		return
+	}
+
+	filtered := item.docs[:0]
+	for _, d := range item.docs {
+		field := d.Fields["id"]
+		if str, ok := field.Value.(string); !ok || str != docID {
+			filtered = append(filtered, d)
+		}
+	}
+
+	if len(filtered) == 0 {
+		idx.tree.Delete(probe)
+		return
+	}
+
+	item.docs = filtered
+	idx.tree.ReplaceOrInsert(item)
 }
 
 func (idx *Index) RangeQuery(min, max *string, desc bool) []*Document {
