@@ -68,6 +68,17 @@ func (s *Store) DeleteCollection(name string) error {
 	return nil
 }
 
+func (s *Store) ListCollections() []string {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+
+	var names []string
+	for name := range s.Collections {
+		names = append(names, name)
+	}
+	return names
+}
+
 func NewStoreFromDump(dump []byte) (*Store, error) {
 	var s Store
 	if err := json.Unmarshal(dump, &s); err != nil {
