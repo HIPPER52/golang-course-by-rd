@@ -1,0 +1,15 @@
+.git
+.vscode
+bin
+tmp
+logs
+
+.DS_Store
+*.log
+
+.env
+.env.*
+
+*.exe
+*.out
+*.test

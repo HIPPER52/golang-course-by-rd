@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"lesson_12/internal/commands"
-	"lesson_12/internal/document_store"
+	"lesson_13/internal/commands"
+	"lesson_13/internal/document_store"
 	"log"
 	"net"
 )
