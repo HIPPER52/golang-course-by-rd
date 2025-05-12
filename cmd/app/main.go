@@ -26,13 +26,14 @@ func main() {
 	}
 
 	var wg sync.WaitGroup
+	const usersCount = 50
 
 	for i := 0; i < 1000; i++ {
 		wg.Add(1)
-		go func(i int) {
+		go func() {
 			defer wg.Done()
 
-			userID := strconv.Itoa(i)
+			userID := strconv.Itoa(i % usersCount)
 			doc := documentstore.Document{
 				Fields: map[string]documentstore.DocumentField{
 					"id": {
@@ -61,7 +62,7 @@ func main() {
 					slog.Warn("delete failed", "id", userID, "error", err)
 				}
 			}
-		}(i)
+		}()
 	}
 
 	wg.Wait()

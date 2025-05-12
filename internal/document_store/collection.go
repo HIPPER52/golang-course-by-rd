@@ -22,6 +22,8 @@ type CollectionConfig struct {
 
 type Collection struct {
 	mx        sync.RWMutex
+	indexesMx sync.RWMutex
+
 	config    CollectionConfig     `json:"config"`
 	documents map[string]*Document `json:"documents"`
 	indexes   map[string]*Index    `json:"-"`
@@ -42,9 +44,8 @@ type QueryParams struct {
 }
 
 func (s *Collection) CreateIndex(fieldName string) error {
-	if s.indexes == nil {
-		s.indexes = make(map[string]*Index)
-	}
+	s.indexesMx.Lock()
+	defer s.indexesMx.Unlock()
 
 	if _, exists := s.indexes[fieldName]; exists {
 		return ErrIndexAlreadyExists
@@ -52,6 +53,9 @@ func (s *Collection) CreateIndex(fieldName string) error {
 
 	idx := &Index{}
 	s.indexes[fieldName] = idx
+
+	s.mx.RLock()
+	defer s.mx.RUnlock()
 
 	for _, doc := range s.documents {
 		field, exists := doc.Fields[fieldName]
@@ -69,6 +73,9 @@ func (s *Collection) CreateIndex(fieldName string) error {
 }
 
 func (s *Collection) DeleteIndex(fieldName string) error {
+	s.indexesMx.Lock()
+	defer s.indexesMx.Unlock()
+
 	if s.indexes == nil {
 		return ErrIndexNotFound
 	}
@@ -82,6 +89,9 @@ func (s *Collection) DeleteIndex(fieldName string) error {
 }
 
 func (s *Collection) Query(fieldName string, params QueryParams) ([]Document, error) {
+	s.indexesMx.Lock()
+	defer s.indexesMx.Unlock()
+
 	if s.indexes == nil {
 		return nil, ErrIndexNotFound
 	}
@@ -102,9 +112,6 @@ func (s *Collection) Query(fieldName string, params QueryParams) ([]Document, er
 }
 
 func (s *Collection) Put(doc Document) error {
-	s.mx.Lock()
-	defer s.mx.Unlock()
-
 	primaryKey := s.config.PrimaryKey
 
 	keyField, exists := doc.Fields[primaryKey]
@@ -122,7 +129,9 @@ func (s *Collection) Put(doc Document) error {
 	}
 
 	//slog.Info("Document added/updated", "collection", s.config.PrimaryKey, "key", key)
+	s.mx.Lock()
 	s.documents[key] = &doc
+	s.mx.Unlock()
 	return nil
 }
 
@@ -155,7 +164,7 @@ func (s *Collection) List() []Document {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 
-	var docs []Document
+	docs := make([]Document, 0, len(s.documents))
 	for _, doc := range s.documents {
 		docs = append(docs, *doc)
 	}

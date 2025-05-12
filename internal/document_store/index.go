@@ -1,5 +1,7 @@
 package documentstore
 
+import "sync"
+
 type IndexNode struct {
 	Key   string
 	Docs  []*Document
@@ -17,18 +19,28 @@ func NewIndexNode() *IndexNode {
 }
 
 type Index struct {
+	mx   sync.RWMutex
 	Root *IndexNode
 }
 
 func (idx *Index) Insert(key string, doc *Document) {
+	idx.mx.Lock()
+	defer idx.mx.Unlock()
+
 	idx.Root = idx.insertRecursive(idx.Root, key, doc)
 }
 
 func (idx *Index) Delete(key string) {
+	idx.mx.Lock()
+	defer idx.mx.Unlock()
+
 	idx.Root = idx.deleteRecursive(idx.Root, key)
 }
 
 func (idx *Index) RangeQuery(min, max *string, desc bool) []*Document {
+	idx.mx.RLock()
+	defer idx.mx.RUnlock()
+
 	var result []*Document
 	idx.rangeQueryRecursive(idx.Root, min, max, desc, &result)
 	return result
