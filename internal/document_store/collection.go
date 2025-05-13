@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"sync"
 )
 
@@ -103,7 +102,7 @@ func (s *Collection) Query(fieldName string, params QueryParams) ([]Document, er
 
 	docsPtrs := idx.RangeQuery(params.MinValue, params.MaxValue, params.Desc)
 
-	var docs []Document
+	var docs []Document = make([]Document, 0, len(docsPtrs))
 	for _, ptr := range docsPtrs {
 		docs = append(docs, *ptr)
 	}
@@ -128,7 +127,6 @@ func (s *Collection) Put(doc Document) error {
 		return fmt.Errorf("%w: keyField is not a string", ErrDocumentHasIncorrectTypeField)
 	}
 
-	//slog.Info("Document added/updated", "collection", s.config.PrimaryKey, "key", key)
 	s.mx.Lock()
 	s.documents[key] = &doc
 	s.mx.Unlock()
@@ -155,7 +153,6 @@ func (s *Collection) Delete(key string) error {
 		return ErrDocumentNotFound
 	}
 
-	slog.Info("Document deleted", "collection", s.config.PrimaryKey, "key", key)
 	delete(s.documents, key)
 	return nil
 }
