@@ -20,12 +20,12 @@ var (
 
 type Store struct {
 	mx          sync.RWMutex
-	Collections map[string]*Collection `json:"collections"`
+	collections map[string]*Collection `json:"collections"`
 }
 
 func NewStore() *Store {
 	return &Store{
-		Collections: make(map[string]*Collection),
+		collections: make(map[string]*Collection),
 	}
 }
 
@@ -33,12 +33,12 @@ func (s *Store) CreateCollection(name string, cfg *CollectionConfig) (*Collectio
 	s.mx.Lock()
 	defer s.mx.Unlock()
 
-	if _, exists := s.Collections[name]; exists {
+	if _, exists := s.collections[name]; exists {
 		return nil, fmt.Errorf("%w", ErrCollectionAlreadyExists)
 	}
 
 	collection := NewCollection(*cfg)
-	s.Collections[name] = collection
+	s.collections[name] = collection
 
 	slog.Info("Collection created", "name", name)
 	return collection, nil
@@ -48,7 +48,7 @@ func (s *Store) GetCollection(name string) (*Collection, error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 
-	collection, exists := s.Collections[name]
+	collection, exists := s.collections[name]
 	if !exists {
 		return nil, fmt.Errorf("%w", ErrCollectionNotFound)
 	}
@@ -59,12 +59,12 @@ func (s *Store) DeleteCollection(name string) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 
-	if _, exists := s.Collections[name]; !exists {
+	if _, exists := s.collections[name]; !exists {
 		return fmt.Errorf("%w", ErrCollectionNotFound)
 	}
 
 	slog.Info("Collection deleted", "name", name)
-	delete(s.Collections, name)
+	delete(s.collections, name)
 	return nil
 }
 
@@ -73,7 +73,7 @@ func (s *Store) ListCollections() []string {
 	defer s.mx.RUnlock()
 
 	var names []string
-	for name := range s.Collections {
+	for name := range s.collections {
 		names = append(names, name)
 	}
 	return names
@@ -83,8 +83,8 @@ func (s *Store) ListCollectionNames() []string {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 
-	names := make([]string, 0, len(s.Collections))
-	for name := range s.Collections {
+	names := make([]string, 0, len(s.collections))
+	for name := range s.collections {
 		names = append(names, name)
 	}
 	return names
