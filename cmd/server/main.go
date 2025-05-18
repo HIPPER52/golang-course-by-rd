@@ -2,12 +2,17 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"lesson_12/internal/commands"
 	"lesson_12/internal/document_store"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 )
 
 var store = documentstore.NewStore()
@@ -53,7 +58,7 @@ func processCommand(in commands.CommandMessage) (commands.CommandMessage, error)
 			return resp, err
 		}
 
-		_, err := store.CreateCollection(req.Name, &documentstore.CollectionConfig{PrimaryKey: req.Name})
+		_, err := store.CreateCollection(req.Name, &documentstore.CollectionConfig{PrimaryKey: req.PrimaryKey})
 		if err != nil {
 			return resp, err
 		}
@@ -70,10 +75,7 @@ func processCommand(in commands.CommandMessage) (commands.CommandMessage, error)
 		resp.Payload = mustMarshal(commands.DeleteCollectionResponse{})
 
 	case commands.ListCollectionsCommand:
-		names := make([]string, 0, len(store.Collections))
-		for name := range store.Collections {
-			names = append(names, name)
-		}
+		names := store.ListCollectionNames()
 		resp.Payload = mustMarshal(commands.ListCollectionsResponse{Collections: names})
 
 	case commands.PutDocumentCommand:
@@ -164,7 +166,12 @@ func processCommand(in commands.CommandMessage) (commands.CommandMessage, error)
 }
 
 func sendMessage(w *bufio.Writer, msg commands.CommandMessage) {
-	data, _ := json.Marshal(msg)
+	data, err := json.Marshal(msg)
+	if err != nil {
+		fmt.Fprintf(w, `{"error":"failed to marshal response: %s"}`+"\n", err.Error())
+		w.Flush()
+		return
+	}
 	w.Write(data)
 	w.WriteByte('\n')
 	w.Flush()
@@ -181,18 +188,43 @@ func mustMarshal(v any) json.RawMessage {
 }
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+
 	l, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("Server listening on :8080")
 
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+		<-sigCh
+		fmt.Println("Shutting down...")
+		cancel()
+		l.Close()
+	}()
+
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			fmt.Println("accept error:", err)
+			select {
+			case <-ctx.Done():
+				break
+			default:
+				fmt.Println("accept error:", err)
+			}
 			continue
 		}
-		go handleConnection(conn)
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			handleConnection(conn)
+		}()
 	}
+
+	wg.Wait()
+	fmt.Println("Shutdown complete")
 }

@@ -1,7 +1,8 @@
 package commands
 
 type CreateCollectionRequest struct {
-	Name string `json:"name"`
+	PrimaryKey string `json:"primaryKey"`
+	Name       string `json:"name"`
 }
 type CreateCollectionResponse struct{}
 
