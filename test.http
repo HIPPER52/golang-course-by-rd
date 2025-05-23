@@ -1,0 +1,82 @@
+### Create collection
+POST http://localhost:8080/create_collection
+Content-Type: application/json
+
+{
+  "collection_name": "users",
+  "primary_key": "id"
+}
+
+### Put document
+POST http://localhost:8080/put_document
+Content-Type: application/json
+
+{
+  "collection_name": "users",
+  "document": {
+    "id": "123",
+    "name": "Alex",
+    "age": 30
+  }
+}
+
+### Get document
+POST http://localhost:8080/get_document
+Content-Type: application/json
+
+{
+  "collection_name": "users",
+  "key": "id",
+  "value": "123"
+}
+
+### List documents
+POST http://localhost:8080/list_documents
+Content-Type: application/json
+
+{
+  "collection_name": "users"
+}
+
+### Create index
+POST http://localhost:8080/create_index
+Content-Type: application/json
+
+{
+  "collection_name": "users",
+  "field": "id",
+  "unique": true
+}
+
+### Delete index
+POST http://localhost:8080/delete_index
+Content-Type: application/json
+
+{
+  "collection_name": "users",
+  "field": "id"
+}
+
+### Delete document
+POST http://localhost:8080/delete_document
+Content-Type: application/json
+
+{
+  "collection_name": "users",
+  "key": "id",
+  "value": "123"
+}
+
+### List collections
+POST http://localhost:8080/list_collections
+Content-Type: application/json
+
+{}
+
+### Delete collection
+POST http://localhost:8080/delete_collection
+Content-Type: application/json
+
+{
+  "collection_name": "users"
+}
