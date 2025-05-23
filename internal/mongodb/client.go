@@ -5,35 +5,28 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log/slog"
 	"os"
 )
 
-var client *mongo.Client
-
-func Init() error {
+func NewMongoClient(ctx context.Context) (*mongo.Client, error) {
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
-		return fmt.Errorf("MONGO_URI not set in environment")
+		return nil, fmt.Errorf("MONGO_URI not set in environment")
 	}
 
-	ctx := context.Background()
 	opts := options.Client()
 	opts.ApplyURI(mongoURI)
 
-	var err error
-	client, err = mongo.Connect(ctx, opts)
+	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
-		return fmt.Errorf("mongo.Connect failed: %w", err)
+		return nil, fmt.Errorf("mongo.Connect failed: %w", err)
 	}
 
 	if err := client.Ping(ctx, nil); err != nil {
-		return fmt.Errorf("ping failed: %w", err)
+		return nil, fmt.Errorf("ping failed: %w", err)
 	}
 
-	fmt.Println("MongoDB connected successfully")
-	return nil
-}
-
-func GetClient() *mongo.Client {
-	return client
+	slog.Info("MongoDB connected successfully")
+	return client, nil
 }

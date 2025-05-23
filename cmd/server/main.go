@@ -1,17 +1,25 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"lesson_14/internal/api"
 	"lesson_14/internal/mongodb"
+	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
 	fmt.Println("Start launching...")
 
-	if err := mongodb.Init(); err != nil {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	client, err := mongodb.NewMongoClient(ctx)
+	if err != nil {
 		panic(fmt.Errorf("failed to init MongoDB: %v", err))
 	}
 
@@ -20,7 +28,7 @@ func main() {
 		dbName = "documentstore"
 	}
 
-	store := mongodb.NewStore(mongodb.GetClient().Database(dbName))
+	store := mongodb.NewStore(client.Database(dbName))
 
 	handler := api.NewHandler(store)
 
@@ -41,8 +49,18 @@ func main() {
 		port = "8080"
 	}
 
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
-		panic(fmt.Errorf("server listening failed: %v", err))
+	srv := &http.Server{Addr: ":" + port}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("server error", "error", err)
+		}
+	}()
+
+	<-ctx.Done()
+	slog.Info("Shutdown initiated")
+
+	if err := client.Disconnect(context.Background()); err != nil {
+		slog.Error("Failed to disconnect MongoDB", "error", err)
 	}
 }

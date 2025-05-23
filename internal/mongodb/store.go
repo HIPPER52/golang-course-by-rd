@@ -19,7 +19,22 @@ func NewStore(db *mongo.Database) *Store {
 
 func (s *Store) PutDocument(ctx context.Context, collectionName string, doc any) error {
 	collection := s.db.Collection(collectionName)
-	_, err := collection.InsertOne(ctx, doc)
+
+	bdoc, ok := doc.(map[string]interface{})
+	if !ok {
+		return errors.New("document must be a map")
+	}
+
+	id, exists := bdoc["_id"]
+	if !exists {
+		return errors.New("document must contain _id field")
+	}
+
+	filter := bson.M{"_id": id}
+	update := bson.M{"$set": bdoc}
+	opts := options.Update().SetUpsert(true)
+
+	_, err := collection.UpdateOne(ctx, filter, update, opts)
 	return err
 }
 
@@ -71,9 +86,11 @@ func (s *Store) ListDocuments(ctx context.Context, collectionName string) ([]map
 func (s *Store) CreateIndex(ctx context.Context, collectionName, field string, unique bool) error {
 	collection := s.db.Collection(collectionName)
 
+	indexName := "ix_" + field
+
 	indexModel := mongo.IndexModel{
 		Keys:    bson.D{{Key: field, Value: 1}},
-		Options: options.Index().SetUnique(unique),
+		Options: options.Index().SetUnique(unique).SetName(indexName),
 	}
 
 	_, err := collection.Indexes().CreateOne(ctx, indexModel)
@@ -87,7 +104,18 @@ func (s *Store) DeleteIndex(ctx context.Context, collectionName, indexName strin
 }
 
 func (s *Store) CreateCollection(ctx context.Context, name string) error {
-	return s.db.CreateCollection(ctx, name)
+	err := s.db.CreateCollection(ctx, name)
+	if err != nil {
+		return err
+	}
+
+	indexModel := mongo.IndexModel{
+		Keys:    bson.D{{Key: "id", Value: 1}},
+		Options: options.Index().SetUnique(true).SetName("ix_id"),
+	}
+
+	_, err = s.db.Collection(name).Indexes().CreateOne(ctx, indexModel)
+	return err
 }
 
 func (s *Store) DeleteCollection(ctx context.Context, name string) error {

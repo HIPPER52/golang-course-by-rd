@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"lesson_14/internal/models"
@@ -23,10 +24,10 @@ func (h *Handler) PutDocument(w http.ResponseWriter, r *http.Request) {
 	}
 	err := h.Store.PutDocument(r.Context(), req.CollectionName, req.Document)
 	if err != nil {
-		respondJSON(w, models.Response{Status: false})
+		http.Error(w, fmt.Sprintf("failed to put document: %v", err), http.StatusInternalServerError)
 		return
 	}
-	respondJSON(w, models.Response{Status: true})
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
@@ -36,10 +37,14 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 	}
 	doc, err := h.Store.GetDocument(r.Context(), req.CollectionName, req.Key, req.Value)
 	if err != nil {
-		respondJSON(w, models.GetDocumentResponse{Status: false})
+		http.Error(w, fmt.Sprintf("failed to get document: %v", err), http.StatusInternalServerError)
 		return
 	}
-	respondJSON(w, models.GetDocumentResponse{Status: true, Document: doc})
+	if doc == nil {
+		http.Error(w, "document not found", http.StatusNotFound)
+		return
+	}
+	respondJSON(w, doc)
 }
 
 func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
@@ -49,10 +54,10 @@ func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 	docs, err := h.Store.ListDocuments(r.Context(), req.CollectionName)
 	if err != nil {
-		respondJSON(w, models.GetDocumentResponse{Status: false})
+		http.Error(w, fmt.Sprintf("failed to list documents: %v", err), http.StatusInternalServerError)
 		return
 	}
-	respondJSON(w, models.ListDocumentsResponse{Status: true, Documents: docs})
+	respondJSON(w, docs)
 }
 
 func (h *Handler) DeleteDocument(w http.ResponseWriter, r *http.Request) {
@@ -60,12 +65,16 @@ func (h *Handler) DeleteDocument(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSONBody(w, r, &req) {
 		return
 	}
-	status, err := h.Store.DeleteDocument(r.Context(), req.CollectionName, req.Key, req.Value)
+	deleted, err := h.Store.DeleteDocument(r.Context(), req.CollectionName, req.Key, req.Value)
 	if err != nil {
-		respondJSON(w, models.Response{Status: false})
+		http.Error(w, fmt.Sprintf("failed to delete document: %v", err), http.StatusInternalServerError)
 		return
 	}
-	respondJSON(w, models.Response{Status: status})
+	if !deleted {
+		http.Error(w, "document not found", http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) CreateCollection(w http.ResponseWriter, r *http.Request) {
@@ -75,10 +84,10 @@ func (h *Handler) CreateCollection(w http.ResponseWriter, r *http.Request) {
 	}
 	err := h.Store.CreateCollection(r.Context(), req.CollectionName)
 	if err != nil {
-		respondJSON(w, models.Response{Status: false})
+		http.Error(w, fmt.Sprintf("failed to create collection: %v", err), http.StatusInternalServerError)
 		return
 	}
-	respondJSON(w, models.Response{Status: true})
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (h *Handler) DeleteCollection(w http.ResponseWriter, r *http.Request) {
@@ -88,19 +97,19 @@ func (h *Handler) DeleteCollection(w http.ResponseWriter, r *http.Request) {
 	}
 	err := h.Store.DeleteCollection(r.Context(), req.CollectionName)
 	if err != nil {
-		respondJSON(w, models.Response{Status: false})
+		http.Error(w, fmt.Sprintf("failed to delete collection: %v", err), http.StatusInternalServerError)
 		return
 	}
-	respondJSON(w, models.Response{Status: true})
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) ListCollections(w http.ResponseWriter, r *http.Request) {
 	names, err := h.Store.ListCollections(r.Context())
 	if err != nil {
-		respondJSON(w, models.ListCollectionsResponse{Status: false, Collections: nil})
+		http.Error(w, fmt.Sprintf("failed to list collections: %v", err), http.StatusInternalServerError)
 		return
 	}
-	respondJSON(w, models.ListCollectionsResponse{Status: true, Collections: names})
+	respondJSON(w, names)
 }
 
 func (h *Handler) CreateIndex(w http.ResponseWriter, r *http.Request) {
@@ -110,10 +119,10 @@ func (h *Handler) CreateIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	err := h.Store.CreateIndex(r.Context(), req.CollectionName, req.Field, req.Unique)
 	if err != nil {
-		respondJSON(w, models.Response{Status: false})
+		http.Error(w, fmt.Sprintf("failed to create index: %v", err), http.StatusInternalServerError)
 		return
 	}
-	respondJSON(w, models.Response{Status: true})
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (h *Handler) DeleteIndex(w http.ResponseWriter, r *http.Request) {
@@ -123,10 +132,10 @@ func (h *Handler) DeleteIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	err := h.Store.DeleteIndex(r.Context(), req.CollectionName, req.Field)
 	if err != nil {
-		respondJSON(w, models.Response{Status: false})
+		http.Error(w, fmt.Sprintf("failed to delete index: %v", err), http.StatusInternalServerError)
 		return
 	}
-	respondJSON(w, models.Response{Status: true})
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func respondJSON(w http.ResponseWriter, v any) {
