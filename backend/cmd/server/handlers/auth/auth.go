@@ -70,8 +70,9 @@ type SignInRequestBody struct {
 }
 
 type SignInResponse200Body struct {
-	Token      string `json:"token"`
-	OperatorID string `json:"operator_id"`
+	Token      string     `json:"token"`
+	OperatorID string     `json:"operator_id"`
+	Role       roles.Role `json:"role"`
 }
 
 func (h *Handler) SignIn(ctx *fiber.Ctx) error {
@@ -103,5 +104,6 @@ func (h *Handler) SignIn(ctx *fiber.Ctx) error {
 	return ctx.JSON(&SignInResponse200Body{
 		Token:      *token,
 		OperatorID: oprtr.ID,
+		Role:       oprtr.Role,
 	})
 }

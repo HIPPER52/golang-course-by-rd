@@ -70,3 +70,21 @@ func (s *Service) GetOperatorByID(ctx context.Context, id string) (*Operator, er
 	}
 	return op, nil
 }
+
+func (s *Service) GetAllOperators(ctx context.Context) ([]*Operator, error) {
+	cursor, err := s.collection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch operators: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var result []*Operator
+	for cursor.Next(ctx) {
+		var op Operator
+		if err := cursor.Decode(&op); err != nil {
+			return nil, err
+		}
+		result = append(result, &op)
+	}
+	return result, nil
+}

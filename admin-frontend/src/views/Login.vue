@@ -34,8 +34,8 @@
   
   const submit = async () => {
     try {
-      const { token, role } = await login(email.value, password.value)
-      userStore.setUser({ token, role })
+      const { token, role, operator_id } = await login(email.value, password.value)
+      userStore.setUser({ token, role, operator_id })
       router.push('/chat')
     } catch (err) {
       alert('Login failed')

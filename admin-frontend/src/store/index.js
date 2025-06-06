@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import AdminLayout from '../layouts/AdminLayout.vue'
 import Chat from '../views/Chat.vue'
-import History from '../views/History.vue'
 import Operators from '../views/Operators.vue'
 
 const routes = [
@@ -29,12 +28,6 @@ const routes = [
         path: 'operators',
         name: 'Operators',
         component: Operators,
-        meta: { requiresAdmin: true },
-      },
-      {
-        path: 'history',
-        name: 'History',
-        component: History,
         meta: { requiresAdmin: true },
       },
     ],

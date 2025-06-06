@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Chat from '../views/Chat.vue'
-import History from '../views/History.vue'
 import Operators from '../views/Operators.vue'
+import Statistics from '../views/Statistics.vue'
 import { useUserStore } from '../store/userStore'
 import AdminLayout from '../layouts/AdminLayout.vue'
 
@@ -17,13 +17,13 @@ const routes = [
             meta: { requiresAuth: true },
           },
           {
-            path: 'history',
-            component: History,
+            path: 'operators',
+            component: Operators,
             meta: { requiresAuth: true, requiresAdmin: true },
           },
           {
-            path: 'operators',
-            component: Operators,
+            path: 'statistics',
+            component: Statistics,
             meta: { requiresAuth: true, requiresAdmin: true },
           },
         ],

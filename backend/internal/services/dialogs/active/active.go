@@ -75,3 +75,11 @@ func (s *Service) FindByOperatorID(ctx context.Context, operatorID string) ([]mo
 	}
 	return dialogs, nil
 }
+
+func (s *Service) CountByOperator(ctx context.Context, operatorID string) (int, error) {
+	count, err := s.collection.CountDocuments(ctx, bson.M{"operator_id": operatorID})
+	if err != nil {
+		return 0, err
+	}
+	return int(count), nil
+}

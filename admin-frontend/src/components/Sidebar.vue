@@ -2,8 +2,8 @@
     <aside class="sidebar">
       <ul class="menu">
         <li><router-link to="/chat">Chat</router-link></li>
-        <li><router-link to="/history">Archive</router-link></li>
         <li v-if="isAdmin"><router-link to="/operators">Operators</router-link></li>
+        <li v-if="isAdmin"><router-link to="/statistics">Statistics</router-link></li>
       </ul>
       <button class="logout-btn" @click="logout">Log Out</button>
     </aside>
@@ -16,6 +16,7 @@
   const userStore = useUserStore()
   const router = useRouter()
   
+  console.log('User Store:', userStore)
   const isAdmin = userStore.isAdmin
   
   function logout() {

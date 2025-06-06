@@ -57,6 +57,9 @@ func (h *Handlers) RegisterRoutes(router fiber.Router) {
 	adminGroup := api.Group("/admin")
 	adminGroup.Use(h.mdlwrs.Auth.Handle)
 	adminGroup.Use(h.mdlwrs.Role.RequireRoles(roles.Admin))
+	adminGroup.Get("/users", h.Operator.ListOperators)
+	adminGroup.Post("/users", h.Operator.CreateOperator)
+	adminGroup.Get("/stats", h.Operator.GetOperatorStats)
 
 	operatorGroup := api.Group("/operator")
 	operatorGroup.Use(h.mdlwrs.Auth.Handle)
