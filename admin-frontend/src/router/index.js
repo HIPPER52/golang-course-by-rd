@@ -10,6 +10,7 @@ const routes = [
     {
         path: '/',
         component: AdminLayout,
+        meta: { requiresAuth: true },
         children: [
           {
             path: 'chat',

@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	Env  string `env:"APP_ENV" envDefault:"development"`
-	Port string `env:"PORT" envDefault:"8081"`
+	Port string `env:"PORT" envDefault:"8080"`
 
 	MongoURI    string `env:"MONGO_URI" envDefault:"mongodb://root:root@localhost:27017"`
 	MongoDbName string `env:"MONGO_DB_NAME" envDefault:"course_project"`

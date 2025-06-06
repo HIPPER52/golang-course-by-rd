@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"course_project/internal/constants"
 	"course_project/internal/dto"
 	"course_project/internal/services"
 	"course_project/internal/services/operator"
@@ -27,7 +28,15 @@ func (h *Handler) GetQueuedDialogs(ctx *fiber.Ctx) error {
 }
 
 func (h *Handler) GetActiveDialogs(ctx *fiber.Ctx) error {
-	dialogs, err := h.svc.ActiveDialog.ListAll(ctx.Context())
+	userIDRaw := ctx.Locals(constants.CONTEXT_USER_ID)
+	userIDPtr, ok := userIDRaw.(*string)
+	if !ok || userIDPtr == nil || *userIDPtr == "" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized",
+		})
+	}
+
+	dialogs, err := h.svc.ActiveDialog.FindByOperatorID(ctx.Context(), *userIDPtr)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to load active dialogs",

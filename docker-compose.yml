@@ -1,7 +1,9 @@
+version: "3.9"
+
 services:
-  app:
+  backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
       target: deploy
     container_name: support-chat-backend
@@ -9,7 +11,7 @@ services:
       - "8080:8080"
     restart: unless-stopped
     env_file:
-      - .env
+      - ./backend/.env
     depends_on:
       - mongo
       - rabbitmq
@@ -21,17 +23,35 @@ services:
 
   consumer:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
       target: consumer
     container_name: support-chat-consumer
-    command: [ "/usr/local/bin/server", "-consumer" ]
-    restart: unless-stopped
     env_file:
-      - .env
+      - ./backend/.env
     depends_on:
       - mongo
       - rabbitmq
+
+  admin-frontend:
+    build:
+      context: ./admin-frontend
+      dockerfile: Dockerfile
+    container_name: support-chat-admin-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  client-frontend:
+    build:
+      context: ./client-frontend
+      dockerfile: Dockerfile
+    container_name: support-chat-client-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
 
   mongo:
     image: mongo:7.0
@@ -44,7 +64,7 @@ services:
       MONGO_INITDB_DATABASE: support
     volumes:
       - mongo-data:/data/db
-      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./backend/init-mongo.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
 
   rabbitmq:
     image: rabbitmq:3-management
