@@ -17,6 +17,14 @@ func NewHandler(svc *services.Services) *Handler {
 	return &Handler{svc: svc}
 }
 
+// GetQueuedDialogs godoc
+// @Summary      Get queued dialogs
+// @Description  Returns all queued dialogs
+// @Tags         operator
+// @Produce      json
+// @Success      200  {array}  models.QueuedDialog
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /operator/dialogs/queued [get]
 func (h *Handler) GetQueuedDialogs(ctx *fiber.Ctx) error {
 	dialogs, err := h.svc.QueuedDialog.ListAll(ctx.Context())
 	if err != nil {
@@ -27,6 +35,15 @@ func (h *Handler) GetQueuedDialogs(ctx *fiber.Ctx) error {
 	return ctx.JSON(dialogs)
 }
 
+// GetActiveDialogs godoc
+// @Summary      Get active dialogs of operator
+// @Description  Returns all active dialogs assigned to the logged-in operator
+// @Tags         operator
+// @Produce      json
+// @Success      200  {array}  models.ActiveDialog
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /operator/dialogs/active [get]
 func (h *Handler) GetActiveDialogs(ctx *fiber.Ctx) error {
 	userIDRaw := ctx.Locals(constants.CONTEXT_USER_ID)
 	userIDPtr, ok := userIDRaw.(*string)
@@ -45,6 +62,14 @@ func (h *Handler) GetActiveDialogs(ctx *fiber.Ctx) error {
 	return ctx.JSON(dialogs)
 }
 
+// ListOperators godoc
+// @Summary      List all operators
+// @Description  Returns all operators in the system
+// @Tags         operator
+// @Produce      json
+// @Success      200  {array}  operator.Operator
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /operator/list [get]
 func (h *Handler) ListOperators(ctx *fiber.Ctx) error {
 	operators, err := h.svc.Operator.GetAllOperators(ctx.Context())
 	if err != nil {
@@ -53,6 +78,18 @@ func (h *Handler) ListOperators(ctx *fiber.Ctx) error {
 	return ctx.JSON(operators)
 }
 
+// CreateOperator godoc
+// @Summary      Create operator
+// @Description  Creates a new operator account
+// @Tags         operator
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.CreateOperatorDTO  true  "Operator Data"
+// @Success      201      {object}  operator.Operator
+// @Failure      400      {object}  map[string]interface{}
+// @Failure      409      {object}  map[string]interface{}
+// @Failure      500      {object}  map[string]interface{}
+// @Router       /operator/create [post]
 func (h *Handler) CreateOperator(ctx *fiber.Ctx) error {
 	var dto dto.CreateOperatorDTO
 	if err := ctx.BodyParser(&dto); err != nil {
@@ -70,6 +107,14 @@ func (h *Handler) CreateOperator(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusCreated).JSON(op)
 }
 
+// GetOperatorStats godoc
+// @Summary      Get operator statistics
+// @Description  Returns statistics for each operator including dialog counts and average duration
+// @Tags         operator
+// @Produce      json
+// @Success      200  {array}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /operator/stats [get]
 func (h *Handler) GetOperatorStats(ctx *fiber.Ctx) error {
 	operators, err := h.svc.Operator.GetAllOperators(ctx.Context())
 	if err != nil {

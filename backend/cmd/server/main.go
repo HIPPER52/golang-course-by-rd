@@ -1,7 +1,25 @@
+// @title           Support Chat Server
+// @version         1.0
+// @description     Course project: simple support chat with roles, dialogs, and messaging.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   Dima Avtenev
+// @contact.email  hipper52@gmail.com
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8080
+// @BasePath  /
+
+// @securityDefinitions.apikey X-User-Token
+// @in header
+// @name Authorization
 package main
 
 import (
 	"context"
+	_ "course_project/cmd/server/docs"
 	"course_project/cmd/server/handlers"
 	"course_project/cmd/server/middlewares"
 	"course_project/internal/clients"
@@ -11,6 +29,7 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/swagger"
 	"os"
 	"os/signal"
 	"syscall"
@@ -41,6 +60,8 @@ func main() {
 
 	hdlrs := handlers.NewHandlers(cfg, svcs, mdlwrs)
 	hdlrs.RegisterRoutes(app)
+
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	go func() {
 		err := app.Listen(":" + cfg.Port)

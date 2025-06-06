@@ -21,6 +21,17 @@ func NewHandler(svc *services.Services, wsHandler *ws.Handler) *Handler {
 	return &Handler{svc: svc, wsHandler: wsHandler}
 }
 
+// Register godoc
+// @Summary      Register a new operator and create a dialog
+// @Description  Registers a operator and puts them into the dialog queue. Broadcasts dialog creation to operators.
+// @Tags         client
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.RegisterClientDTO  true  "Client registration payload"
+// @Success      201      {object}  map[string]interface{}  "Client and Room ID"
+// @Failure      400      {string}  string  "Invalid request"
+// @Failure      500      {string}  string  "Internal server error"
+// @Router       /client/register [post]
 func (h *Handler) Register(ctx *fiber.Ctx) error {
 	var payload dto.RegisterClientDTO
 	if err := ctx.BodyParser(&payload); err != nil {

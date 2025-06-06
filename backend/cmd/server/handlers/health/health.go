@@ -20,6 +20,14 @@ type HealthResponse struct {
 	Env    string `json:"env"`
 }
 
+// Health godoc
+// @Summary      Health check
+// @Description  Returns status of the service
+// @Tags         health
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  HealthResponse
+// @Router       /health [get]
 func (h *Handler) Health(ctx *fiber.Ctx) error {
 	return ctx.JSON(&HealthResponse{
 		Status: "OK",

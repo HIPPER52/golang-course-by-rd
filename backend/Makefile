@@ -8,6 +8,10 @@ build:
 	@echo "Building Go binary..."
 	GOOS=linux GOARCH=amd64 go build -o bin/$(APP_NAME) ./cmd/server
 
+swagger:
+	@echo "Generating Swagger docs..."
+	swag init --generalInfo cmd/server/main.go --output cmd/server/docs
+
 up:
 	@echo "Starting full stack in Docker..."
 	$(DOCKER_COMPOSE) up --build

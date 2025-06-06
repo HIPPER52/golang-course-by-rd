@@ -1,6 +1,7 @@
 package producer
 
 import (
+	"context"
 	"course_project/internal/clients"
 	"course_project/internal/clients/rabbitmq"
 	"course_project/internal/services/logger"
@@ -27,18 +28,18 @@ func NewService(clients *clients.Clients) *Service {
 }
 
 func (p *Service) Publish(eventType string, payload interface{}) error {
-	logger.Info(nil, "Publishing event: "+eventType)
+	logger.Info(context.Background(), "Publishing event: "+eventType)
 
 	body, err := json.Marshal(Envelope{
 		Type:    eventType,
 		Payload: payload,
 	})
 	if err != nil {
-		logger.Error(nil, fmt.Errorf("failed to marshal event %s: %w", eventType, err))
+		logger.Error(context.Background(), fmt.Errorf("failed to marshal event %s: %w", eventType, err))
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
 
-	logger.Info(nil, "Event published: "+eventType)
+	logger.Info(context.Background(), "Event published: "+eventType)
 	return p.rmq.Channel.Publish(
 		p.exchange,
 		"",

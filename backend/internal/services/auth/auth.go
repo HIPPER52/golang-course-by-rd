@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"course_project/internal/config"
 	"course_project/internal/services/logger"
 	"errors"
@@ -21,7 +22,7 @@ func NewService(cfg *config.Config) *Service {
 		panic("config error, tokenTTLMinutes" + err.Error())
 	}
 
-	logger.Info(nil, "Auth service initialized with token TTL: "+cfg.TokenTTLMinutes+" minutes")
+	logger.Info(context.Background(), "Auth service initialized with token TTL: "+cfg.TokenTTLMinutes+" minutes")
 
 	return &Service{
 		tokenTTLMinutes: time.Duration(minutesInt) * time.Minute,
@@ -40,11 +41,11 @@ func (s *Service) GeneratePasswordHash(password string) (string, error) {
 func (s *Service) CompareHashAndPassword(password, hash string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-		logger.Error(nil, fmt.Errorf("password mismatch"))
+		logger.Error(context.Background(), fmt.Errorf("password mismatch"))
 		return false, nil
 	}
 	if err != nil {
-		logger.Error(nil, fmt.Errorf("error comparing password hash: %w", err))
+		logger.Error(context.Background(), fmt.Errorf("error comparing password hash: %w", err))
 		return false, err
 	}
 	return true, nil

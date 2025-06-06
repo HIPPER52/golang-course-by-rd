@@ -31,6 +31,18 @@ type SignUpResponse200Body struct {
 	Operator *operator.Operator `json:"operator"`
 }
 
+// SignUp godoc
+// @Summary      Register a new operator
+// @Description  Creates a new operator with the given credentials and role
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      SignUpRequestBody  true  "Registration payload"
+// @Success      200      {object}  SignUpResponse200Body
+// @Failure      400      {string}  string  "Bad request"
+// @Failure      409      {string}  string  "Operator already exists"
+// @Failure      500      {string}  string  "Internal server error"
+// @Router       /auth/sign-up [post]
 func (h *Handler) SignUp(ctx *fiber.Ctx) error {
 	req := &SignUpRequestBody{}
 	err := parser.ParseBody(ctx, req)
@@ -75,6 +87,18 @@ type SignInResponse200Body struct {
 	Role       roles.Role `json:"role"`
 }
 
+// SignIn godoc
+// @Summary      Sign in as an operator
+// @Description  Authenticates the operator and returns a JWT token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      SignInRequestBody  true  "Login credentials"
+// @Success      200      {object}  SignInResponse200Body
+// @Failure      400      {string}  string  "Bad request"
+// @Failure      401      {string}  string  "Unauthorized"
+// @Failure      500      {string}  string  "Internal server error"
+// @Router       /auth/sign-in [post]
 func (h *Handler) SignIn(ctx *fiber.Ctx) error {
 	req := &SignInRequestBody{}
 
