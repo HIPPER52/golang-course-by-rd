@@ -125,8 +125,20 @@
                 text: data.text,
             })
             break
+
+        case 'dialog_created':
+            const alreadyQueued = queuedDialogs.value.some(d => d.id === data.room_id)
+            if (!alreadyQueued) {
+                queuedDialogs.value.push({
+                    id: data.room_id,
+                    client_name: data.client_name,
+                    client_phone: data.client_phone,
+                    client_ip: data.client_ip,
+                })
+            }
+            break
     }
-    }
+  }
   
   onMounted(async () => {
     await loadDialogs()

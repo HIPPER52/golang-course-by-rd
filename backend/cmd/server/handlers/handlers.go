@@ -28,12 +28,13 @@ func NewHandlers(
 	svcs *services.Services,
 	mdlwrs *middlewares.Middlewares,
 ) *Handlers {
+	ws := ws.NewHandler(svcs)
 	return &Handlers{
 		Health:   health.NewHandler(cfg),
 		Auth:     auth.NewHandler(svcs),
-		Client:   client.NewHandler(svcs),
+		Client:   client.NewHandler(svcs, ws),
 		Operator: operator.NewHandler(svcs),
-		WS:       ws.NewHandler(svcs),
+		WS:       ws,
 		mdlwrs:   mdlwrs,
 	}
 }
