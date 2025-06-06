@@ -57,16 +57,39 @@ function appendMessage(msg) {
   nextTick(scrollToBottom)
 }
 
-defineExpose({ appendMessage })
+async function loadHistory() {
+  if (!props.dialog?.id) return
+
+  const rawMessages = await fetchMessages(props.dialog.id)
+  const operatorId = localStorage.getItem('operator_id')
+
+  messages.value = rawMessages.map(msg => ({
+    id: msg.id,
+    text: msg.content,
+    sender: msg.sender_id === operatorId ? 'operator' : 'client',
+  }))
+
+  nextTick(scrollToBottom)
+}
+
+defineExpose({ appendMessage, loadHistory })
 
 watch(() => props.dialog?.id, async () => {
   if (props.dialog?.id) {
-    messages.value = await fetchMessages(props.dialog.id)
+    const rawMessages = await fetchMessages(props.dialog.id)
+    const operatorId = localStorage.getItem('operator_id')
+
+    messages.value = rawMessages.map(msg => ({
+      id: msg.id,
+      text: msg.content,
+      sender: msg.sender_id === operatorId ? 'operator' : 'client',
+    }))
+
     nextTick(scrollToBottom)
   }
 })
 
-const submit = () => {
+const submit = async () => {
   const text = newMessage.value.trim()
   if (!text) return
 

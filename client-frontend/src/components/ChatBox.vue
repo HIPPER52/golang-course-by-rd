@@ -21,6 +21,7 @@
   <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import { connectSocket, sendSocketMessage, subscribe } from '../socket'
+import { fetchMessages } from '../services/messageService'
 
 const messages = ref([])
 const text = ref('')
@@ -47,9 +48,18 @@ function send() {
   text.value = ''
 }
 
-onMounted(() => {
-  const dialogId = localStorage.getItem('dialog_id')
-  console.log('Connecting to dialog:', dialogId)
+onMounted(async () => {
+  try {
+    const data = await fetchMessages(dialogId)
+    messages.value = data.map(msg => ({
+      id: msg.id,
+      text: msg.content,
+      sender: msg.sender_id === client.id ? 'client' : 'operator'
+    }))
+    nextTick(scrollToBottom)
+  } catch (e) {
+    console.error('Failed to load history:', e)
+  }
 
   connectSocket(client.id, dialogId)
 

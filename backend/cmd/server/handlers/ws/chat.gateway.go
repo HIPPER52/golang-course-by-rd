@@ -3,13 +3,18 @@ package ws
 import (
 	"context"
 	"course_project/internal/constants"
+	"course_project/internal/constants/consumer"
+	"course_project/internal/constants/message"
 	"course_project/internal/constants/roles"
 	wsevent "course_project/internal/constants/ws"
+	"course_project/internal/models"
 	"course_project/internal/services"
 	"course_project/internal/services/logger"
 	"encoding/json"
 	"fmt"
 	"github.com/gofiber/websocket/v2"
+	"github.com/oklog/ulid/v2"
+	"time"
 )
 
 var allowedEventsByRole = map[roles.Role]map[string]struct{}{
@@ -135,6 +140,21 @@ func (g *ChatGateway) handleMessage(conn *websocket.Conn, data json.RawMessage, 
 	}
 	if err := json.Unmarshal(data, &payload); err != nil {
 		logger.Error(context.Background(), fmt.Errorf("message unmarshal error: %v", err))
+		return
+	}
+
+	msg := models.Message{
+		ID:       ulid.Make().String(),
+		RoomID:   payload.RoomID,
+		SenderID: senderID,
+		Content:  payload.Text,
+		SentAt:   time.Now().UTC(),
+		Type:     message.Text,
+	}
+
+	if err := g.svc.Producer.Publish(consumer.TypeSaveMessage, msg); err != nil {
+		logger.Error(context.Background(), fmt.Errorf("failed to publish message to RabbitMQ: %v", err))
+		_ = conn.WriteMessage(websocket.TextMessage, []byte("error publishing message"))
 		return
 	}
 

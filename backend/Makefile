@@ -16,9 +16,13 @@ up-dev:
 	@echo "Starting dependencies only (MongoDB, RabbitMQ)..."
 	$(DOCKER_COMPOSE) up mongo rabbitmq -d
 
-run:
+run-server:
 	@echo "Running server locally..."
 	go run ./cmd/server/main.go
+
+run-consumer:
+	@echo "Running consumer locally..."
+	go run ./cmd/consumer/main.go
 
 down:
 	@echo "Stopping and removing containers..."

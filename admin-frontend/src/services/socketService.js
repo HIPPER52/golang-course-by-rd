@@ -15,6 +15,23 @@ export function initSocket(token) {
   socket.onopen = () => {
     console.log('[WS] Connected')
     listeners.open.forEach((cb) => cb())
+  
+    const dialogId = localStorage.getItem('dialog_id')
+    const clientRaw = localStorage.getItem('client')
+    let clientId = null
+  
+    try {
+      clientId = clientRaw ? JSON.parse(clientRaw).id : null
+    } catch (e) {
+      console.warn('[WS] Failed to parse client from localStorage')
+    }
+  
+    if (dialogId && clientId) {
+      sendEvent('init', {
+        room_id: dialogId,
+        client_id: clientId,
+      })
+    }
   }
 
   socket.onmessage = (event) => {

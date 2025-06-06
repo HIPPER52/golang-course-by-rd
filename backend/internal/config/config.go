@@ -16,8 +16,9 @@ type Config struct {
 	AuthSecret      string `env:"AUTH_SECRET" envDefault:"supersecret"`
 	TokenTTLMinutes string `env:"TOKEN_TTL_MINUTES" envDefault:"300"`
 
-	RabbitURL      string `env:"RABBITMQ_URL" envDefault:"amqp://guest:guest@localhost:5672/"`
-	RabbitExchange string `env:"RABBITMQ_EXCHANGE" envDefault:"messages"`
+	RabbitMQURL      string `env:"RABBITMQ_URL" envDefault:"amqp://guest:guest@localhost:5672/"`
+	RabbitMQExchange string `env:"RABBITMQ_EXCHANGE" envDefault:"messages"`
+	RabbitMQQueue    string `env:"RABBITMQ_QUEUE" envDefault:"messages_queue"`
 
 	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
 }

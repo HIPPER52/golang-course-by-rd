@@ -39,7 +39,7 @@
   </template>
   
   <script setup>
-  import { ref, onMounted, onUnmounted } from 'vue'
+  import { ref, onMounted, onUnmounted, nextTick } from 'vue'
   import DialogPanel from '../components/DialogPanel.vue'
   import Sidebar from '../components/Sidebar.vue'
   import { sendEvent } from '../services/socketService'
@@ -78,8 +78,10 @@
     }
   }
   
-  const openDialog = (dialog) => {
+  const openDialog = async (dialog) => {
     selectedDialog.value = dialog
+    await nextTick()
+    dialogPanelRef.value?.loadHistory?.()
   }
   
   async function handleSocketEvent(payload) {
@@ -121,7 +123,7 @@
 
             dialogPanelRef.value?.appendMessage?.({
                 id: Date.now(),
-                sender: data.sender,
+                sender: data.sender_id === operatorId ? 'operator' : 'client',
                 text: data.text,
             })
             break

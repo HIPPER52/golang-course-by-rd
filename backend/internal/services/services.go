@@ -9,7 +9,9 @@ import (
 	"course_project/internal/services/dialogs/archived"
 	"course_project/internal/services/dialogs/mover"
 	"course_project/internal/services/dialogs/queued"
+	"course_project/internal/services/message"
 	"course_project/internal/services/operator"
+	"course_project/internal/services/producer"
 )
 
 type Services struct {
@@ -19,7 +21,9 @@ type Services struct {
 	QueuedDialog   *queued.Service
 	ActiveDialog   *active.Service
 	ArchivedDialog *archived.Service
+	Message        *message.Service
 	Mover          *mover.Service
+	Producer       *producer.Service
 }
 
 func NewServices(cfg *config.Config, clients *clients.Clients) *Services {
@@ -30,6 +34,8 @@ func NewServices(cfg *config.Config, clients *clients.Clients) *Services {
 		QueuedDialog:   queued.NewService(clients),
 		ActiveDialog:   active.NewService(clients),
 		ArchivedDialog: archived.NewService(clients),
+		Message:        message.NewService(clients),
 		Mover:          mover.NewService(clients),
+		Producer:       producer.NewService(clients),
 	}
 }

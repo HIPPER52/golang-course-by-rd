@@ -3,6 +3,7 @@ package handlers
 import (
 	"course_project/cmd/server/handlers/auth"
 	"course_project/cmd/server/handlers/client"
+	"course_project/cmd/server/handlers/common"
 	"course_project/cmd/server/handlers/health"
 	"course_project/cmd/server/handlers/operator"
 	"course_project/cmd/server/handlers/ws"
@@ -17,6 +18,7 @@ type Handlers struct {
 	Health   *health.Handler
 	Auth     *auth.Handler
 	Client   *client.Handler
+	Common   *common.Handler
 	Operator *operator.Handler
 	WS       *ws.Handler
 
@@ -34,6 +36,7 @@ func NewHandlers(
 		Auth:     auth.NewHandler(svcs),
 		Client:   client.NewHandler(svcs, ws),
 		Operator: operator.NewHandler(svcs),
+		Common:   common.NewHandler(svcs),
 		WS:       ws,
 		mdlwrs:   mdlwrs,
 	}
@@ -60,9 +63,11 @@ func (h *Handlers) RegisterRoutes(router fiber.Router) {
 	operatorGroup.Use(h.mdlwrs.Role.RequireRoles(roles.Admin, roles.Operator))
 	operatorGroup.Get("/dialogs/queued", h.Operator.GetQueuedDialogs)
 	operatorGroup.Get("/dialogs/active", h.Operator.GetActiveDialogs)
+	operatorGroup.Get("/dialogs/:room_id/messages", h.Common.GetDialogMessages)
 
 	clientGroup := api.Group("/client")
 	clientGroup.Post("/register", h.Client.Register)
+	clientGroup.Get("/dialogs/:room_id/messages", h.Common.GetDialogMessages)
 
 	wsGroup := api.Group("/ws")
 	wsGroup.Get("/client", h.WS.ClientHandler.Handle())
