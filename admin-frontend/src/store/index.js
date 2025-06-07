@@ -1,8 +1,8 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import Login from '../views/Login.vue'
-import AdminLayout from '../layouts/AdminLayout.vue'
-import Chat from '../views/Chat.vue'
-import Operators from '../views/Operators.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import Login from '../views/Login.vue';
+import AdminLayout from '../layouts/AdminLayout.vue';
+import Chat from '../views/Chat.vue';
+import Operators from '../views/Operators.vue';
 
 const routes = [
   {
@@ -32,26 +32,26 @@ const routes = [
       },
     ],
   },
-]
+];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
-})
+});
 
 router.beforeEach((to, from, next) => {
-  const isLoggedIn = !!localStorage.getItem('token')
-  const userRole = localStorage.getItem('role')
+  const isLoggedIn = !!localStorage.getItem('token');
+  const userRole = localStorage.getItem('role');
 
   if (to.meta.requiresAuth && !isLoggedIn) {
-    return next('/login')
+    return next('/login');
   }
 
   if (to.meta.requiresAdmin && userRole !== 'admin') {
-    return next('/chat')
+    return next('/chat');
   }
 
-  next()
-})
+  next();
+});
 
-export default router
+export default router;

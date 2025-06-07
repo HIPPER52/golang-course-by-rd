@@ -1,127 +1,131 @@
 <template>
-    <div class="dialog-layout">
-      <div class="dialog-panel">
-        <h3>Dialog with {{ dialog.client_name }}</h3>
-  
-        <div ref="messagesContainer" class="messages">
-          <div
-            v-for="msg in messages"
-            :key="msg.id"
-            :class="['message', msg.sender === 'operator' ? 'from-operator' : 'from-client']"
-          >
-            <p>{{ msg.text }}</p>
-          </div>
+  <div class="dialog-layout">
+    <div class="dialog-panel">
+      <h3>Dialog with {{ dialog.client_name }}</h3>
+
+      <div ref="messagesContainer" class="messages">
+        <div
+          v-for="msg in messages"
+          :key="msg.id"
+          :class="['message', msg.sender === 'operator' ? 'from-operator' : 'from-client']"
+        >
+          <p>{{ msg.text }}</p>
         </div>
-  
-        <form class="send-form" @submit.prevent="submit">
-          <input v-model="newMessage" placeholder="Type your message..." />
-          <button type="submit">Send</button>
-        </form>
-  
-        <button class="close-btn" @click="$emit('close')">Close</button>
       </div>
-  
-      <div class="client-info">
-        <h4>Client Info</h4>
-        <p><strong>Name:</strong> {{ dialog.client_name }}</p>
-        <p><strong>Phone:</strong> {{ dialog.client_phone || 'N/A' }}</p>
-        <p><strong>IP: </strong>
-            <a :href="`https://whatismyipaddress.com/ip/${dialog.client_ip}`" target="_blank">
-                {{ dialog.client_ip || 'N/A' }}
-            </a>
-        </p>
-      </div>
+
+      <form class="send-form" @submit.prevent="submit">
+        <input v-model="newMessage" placeholder="Type your message..." />
+        <button type="submit">Send</button>
+      </form>
+
+      <button class="close-btn" @click="$emit('close')">Close</button>
     </div>
-  </template>
+
+    <div class="client-info">
+      <h4>Client Info</h4>
+      <p><strong>Name:</strong> {{ dialog.client_name }}</p>
+      <p><strong>Phone:</strong> {{ dialog.client_phone || 'N/A' }}</p>
+      <p>
+        <strong>IP: </strong>
+        <a :href="`https://whatismyipaddress.com/ip/${dialog.client_ip}`" target="_blank">
+          {{ dialog.client_ip || 'N/A' }}
+        </a>
+      </p>
+    </div>
+  </div>
+</template>
 
 <script setup>
-import { ref, watch, onMounted, nextTick } from 'vue'
-import { fetchMessages, sendMessage } from '../services/messageService'
-import { sendEvent } from '../services/socketService'
+import { ref, watch, onMounted, nextTick } from 'vue';
+import { fetchMessages, sendMessage } from '../services/messageService';
+import { sendEvent } from '../services/socketService';
 
-const props = defineProps({ dialog: Object })
-const emit = defineEmits(['close'])
+const props = defineProps({ dialog: Object });
+const emit = defineEmits(['close']);
 
-const messages = ref([])
-const newMessage = ref('')
-const messagesContainer = ref(null)
+const messages = ref([]);
+const newMessage = ref('');
+const messagesContainer = ref(null);
 
 function scrollToBottom() {
   if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
   }
 }
 
 function appendMessage(msg) {
-  messages.value.push(msg)
-  nextTick(scrollToBottom)
+  messages.value.push(msg);
+  nextTick(scrollToBottom);
 }
 
 async function loadHistory() {
-  if (!props.dialog?.id) return
+  if (!props.dialog?.id) return;
 
-  const rawMessages = await fetchMessages(props.dialog.id)
-  const operatorId = localStorage.getItem('operator_id')
+  const rawMessages = await fetchMessages(props.dialog.id);
+  const operatorId = localStorage.getItem('operator_id');
 
-  messages.value = rawMessages.map(msg => ({
+  messages.value = rawMessages.map((msg) => ({
     id: msg.id,
     text: msg.content,
     sender: msg.sender_id === operatorId ? 'operator' : 'client',
-  }))
+  }));
 
-  nextTick(scrollToBottom)
+  nextTick(scrollToBottom);
 }
 
-defineExpose({ appendMessage, loadHistory })
+defineExpose({ appendMessage, loadHistory });
 
-watch(() => props.dialog?.id, async () => {
-  if (props.dialog?.id) {
-    const rawMessages = await fetchMessages(props.dialog.id)
-    const operatorId = localStorage.getItem('operator_id')
+watch(
+  () => props.dialog?.id,
+  async () => {
+    if (props.dialog?.id) {
+      const rawMessages = await fetchMessages(props.dialog.id);
+      const operatorId = localStorage.getItem('operator_id');
 
-    messages.value = rawMessages.map(msg => ({
-      id: msg.id,
-      text: msg.content,
-      sender: msg.sender_id === operatorId ? 'operator' : 'client',
-    }))
+      messages.value = rawMessages.map((msg) => ({
+        id: msg.id,
+        text: msg.content,
+        sender: msg.sender_id === operatorId ? 'operator' : 'client',
+      }));
 
-    nextTick(scrollToBottom)
+      nextTick(scrollToBottom);
+    }
   }
-})
+);
 
 const submit = async () => {
-  const text = newMessage.value.trim()
-  if (!text) return
+  const text = newMessage.value.trim();
+  if (!text) return;
 
   sendEvent('message', {
     room_id: props.dialog.id,
     text,
-  })
+  });
 
   messages.value.push({
     id: Date.now(),
     sender: 'operator',
     text,
-  })
+  });
 
-  newMessage.value = ''
-  nextTick(scrollToBottom)
-}
+  newMessage.value = '';
+  nextTick(scrollToBottom);
+};
 
 const closeDialog = () => {
   sendEvent('dialog_closed', {
     room_id: props.dialog.id,
     info: 'Closed by operator',
-  })
+  });
 
-  emit('close')
-}
+  emit('close');
+};
 </script>
 
 <style scoped>
 .dialog-wrapper {
-    display: contents;
-    height: 100%;
+  display: contents;
+  height: 100%;
 }
 
 .dialog-layout {
@@ -138,7 +142,7 @@ const closeDialog = () => {
   background: white;
   border-radius: 8px;
   padding: 1rem;
-  box-shadow: 0 0 6px rgba(0,0,0,0.05);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.05);
   color: black;
 }
 
@@ -233,7 +237,7 @@ const closeDialog = () => {
   color: black;
   border-radius: 8px;
   padding: 1rem;
-  box-shadow: 0 0 6px rgba(0,0,0,0.05);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.05);
 }
 
 .client-info h4 {
@@ -246,5 +250,4 @@ const closeDialog = () => {
   margin: 0.5rem 0;
   color: #333;
 }
-
 </style>

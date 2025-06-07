@@ -1,161 +1,161 @@
 <template>
-    <div class="chat-page">
-      <div class="chat-sidebar">
-        <div class="dialog-list">
-            <h2>Active Dialogs</h2>
-            <ul>
-                <li v-for="dialog in activeDialogs" :key="dialog.id">
-                <span>{{ dialog.client_name }}</span>
-                <div>
-                    <button @click="openDialog(dialog)">Open</button>
-                    <button @click="finish(dialog.id)">Finish</button>
-                </div>
-                </li>
-            </ul>
-        </div>
-
-        <div class="dialog-list">
-            <h2>Queued Dialogs</h2>
-            <ul>
-                <li v-for="dialog in queuedDialogs" :key="dialog.id">
-                <span>{{ dialog.client_name }}</span>
-                <div>
-                    <button @click="take(dialog.id)">Take</button>
-                </div>
-                </li>
-            </ul>
-        </div>
+  <div class="chat-page">
+    <div class="chat-sidebar">
+      <div class="dialog-list">
+        <h2>Active Dialogs</h2>
+        <ul>
+          <li v-for="dialog in activeDialogs" :key="dialog.id">
+            <span>{{ dialog.client_name }}</span>
+            <div>
+              <button @click="openDialog(dialog)">Open</button>
+              <button @click="finish(dialog.id)">Finish</button>
+            </div>
+          </li>
+        </ul>
       </div>
-  
-      <div class="chat-main">
-        <DialogPanel
-          v-if="selectedDialog"
-          ref="dialogPanelRef"
-          :dialog="selectedDialog"
-          @close="selectedDialog = null"
-        />
+
+      <div class="dialog-list">
+        <h2>Queued Dialogs</h2>
+        <ul>
+          <li v-for="dialog in queuedDialogs" :key="dialog.id">
+            <span>{{ dialog.client_name }}</span>
+            <div>
+              <button @click="take(dialog.id)">Take</button>
+            </div>
+          </li>
+        </ul>
       </div>
     </div>
-  </template>
-  
-  <script setup>
-  import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-  import DialogPanel from '../components/DialogPanel.vue'
-  import Sidebar from '../components/Sidebar.vue'
-  import { sendEvent } from '../services/socketService'
-  import {
-    fetchQueuedDialogs,
-    fetchActiveDialogs,
-    finishDialogById
-  } from '../services/dialogService'
-  import { subscribe, unsubscribe } from '../services/socketService'
-  
-  const queuedDialogs = ref([])
-  const activeDialogs = ref([])
-  const selectedDialog = ref(null)
-  const dialogPanelRef = ref(null) // ⏎
-  
-  const loadDialogs = async () => {
-    queuedDialogs.value = await fetchQueuedDialogs()
-    activeDialogs.value = await fetchActiveDialogs()
+
+    <div class="chat-main">
+      <DialogPanel
+        v-if="selectedDialog"
+        ref="dialogPanelRef"
+        :dialog="selectedDialog"
+        @close="selectedDialog = null"
+      />
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import DialogPanel from '../components/DialogPanel.vue';
+import Sidebar from '../components/Sidebar.vue';
+import { sendEvent } from '../services/socketService';
+import {
+  fetchQueuedDialogs,
+  fetchActiveDialogs,
+  finishDialogById,
+} from '../services/dialogService';
+import { subscribe, unsubscribe } from '../services/socketService';
+
+const queuedDialogs = ref([]);
+const activeDialogs = ref([]);
+const selectedDialog = ref(null);
+const dialogPanelRef = ref(null); // ⏎
+
+const loadDialogs = async () => {
+  queuedDialogs.value = await fetchQueuedDialogs();
+  activeDialogs.value = await fetchActiveDialogs();
+};
+
+const take = (id) => {
+  sendEvent('dialog_taken', {
+    room_id: id,
+    info: 'Taken by operator',
+  });
+};
+
+const finish = (id) => {
+  sendEvent('dialog_closed', {
+    room_id: id,
+    info: 'Closed by operator',
+  });
+
+  if (selectedDialog.value?.id === id) {
+    selectedDialog.value = null;
   }
-  
-  const take = (id) => {
-    sendEvent('dialog_taken', {
-        room_id: id,
-        info: 'Taken by operator',
-    })
+};
+
+const openDialog = async (dialog) => {
+  selectedDialog.value = dialog;
+  await nextTick();
+  dialogPanelRef.value?.loadHistory?.();
+};
+
+async function handleSocketEvent(payload) {
+  const { event, data } = payload;
+
+  switch (event) {
+    case 'dialog_taken':
+      queuedDialogs.value = queuedDialogs.value.filter((d) => d.id !== data.room_id);
+
+      const alreadyExists =
+        Array.isArray(activeDialogs.value) &&
+        activeDialogs.value.some((d) => d.id === data.room_id);
+      if (!alreadyExists) {
+        const takenDialog = queuedDialogs.value.find((d) => d.id === data.room_id);
+
+        if (takenDialog) {
+          activeDialogs.value.push(takenDialog);
+        } else {
+          try {
+            const updatedList = await fetchActiveDialogs();
+            activeDialogs.value = updatedList;
+          } catch (e) {
+            console.error('Failed to refresh active dialogs', e);
+          }
+        }
+      }
+      break;
+    case 'dialog_closed':
+      activeDialogs.value = activeDialogs.value.filter((d) => d.id !== data.room_id);
+      break;
+
+    case 'message':
+      if (selectedDialog.value?.id !== data.room_id) break;
+
+      const operatorId = localStorage.getItem('operator_id');
+
+      if (data.sender_id === operatorId) {
+        break;
+      }
+
+      dialogPanelRef.value?.appendMessage?.({
+        id: Date.now(),
+        sender: data.sender_id === operatorId ? 'operator' : 'client',
+        text: data.text,
+      });
+      break;
+
+    case 'dialog_created':
+      const alreadyQueued = queuedDialogs.value.some((d) => d.id === data.room_id);
+      if (!alreadyQueued) {
+        queuedDialogs.value.push({
+          id: data.room_id,
+          client_name: data.client_name,
+          client_phone: data.client_phone,
+          client_ip: data.client_ip,
+        });
+      }
+      break;
   }
-  
-  const finish = (id) => {
-    sendEvent('dialog_closed', {
-        room_id: id,
-        info: 'Closed by operator',
-    })
+}
 
-    if (selectedDialog.value?.id === id) {
-        selectedDialog.value = null
-    }
-  }
-  
-  const openDialog = async (dialog) => {
-    selectedDialog.value = dialog
-    await nextTick()
-    dialogPanelRef.value?.loadHistory?.()
-  }
-  
-  async function handleSocketEvent(payload) {
-    const { event, data } = payload
+onMounted(async () => {
+  await loadDialogs();
+  subscribe('message', handleSocketEvent);
+  subscribe('dialog_taken', handleSocketEvent);
+  subscribe('dialog_closed', handleSocketEvent);
+});
 
-    switch (event) {
-        case 'dialog_taken':
-            queuedDialogs.value = queuedDialogs.value.filter(d => d.id !== data.room_id)
-
-            const alreadyExists = Array.isArray(activeDialogs.value) &&
-                      activeDialogs.value.some(d => d.id === data.room_id)
-            if (!alreadyExists) {
-                const takenDialog = queuedDialogs.value.find(d => d.id === data.room_id)
-
-                if (takenDialog) {
-                    activeDialogs.value.push(takenDialog)
-                } else {
-                    try {
-                        const updatedList = await fetchActiveDialogs()
-                        activeDialogs.value = updatedList
-                    } catch (e) {
-                        console.error('Failed to refresh active dialogs', e)
-                    }
-                }
-            }
-            break
-        case 'dialog_closed':
-            activeDialogs.value = activeDialogs.value.filter(d => d.id !== data.room_id)
-            break
-
-        case 'message':
-            if (selectedDialog.value?.id !== data.room_id) break
-
-            const operatorId = localStorage.getItem('operator_id')
-
-            if (data.sender_id === operatorId) {
-                break
-            }
-
-            dialogPanelRef.value?.appendMessage?.({
-                id: Date.now(),
-                sender: data.sender_id === operatorId ? 'operator' : 'client',
-                text: data.text,
-            })
-            break
-
-        case 'dialog_created':
-            const alreadyQueued = queuedDialogs.value.some(d => d.id === data.room_id)
-            if (!alreadyQueued) {
-                queuedDialogs.value.push({
-                    id: data.room_id,
-                    client_name: data.client_name,
-                    client_phone: data.client_phone,
-                    client_ip: data.client_ip,
-                })
-            }
-            break
-    }
-  }
-  
-  onMounted(async () => {
-    await loadDialogs()
-    subscribe('message', handleSocketEvent)
-    subscribe('dialog_taken', handleSocketEvent)
-    subscribe('dialog_closed', handleSocketEvent)
-  })
-  
-  onUnmounted(() => {
-    unsubscribe('message', handleSocketEvent)
-    unsubscribe('dialog_taken', handleSocketEvent)
-    unsubscribe('dialog_closed', handleSocketEvent)
-  })
-  </script>
-
+onUnmounted(() => {
+  unsubscribe('message', handleSocketEvent);
+  unsubscribe('dialog_taken', handleSocketEvent);
+  unsubscribe('dialog_closed', handleSocketEvent);
+});
+</script>
 
 <style scoped>
 .chat-view {
@@ -253,7 +253,7 @@
   padding: 0.75rem 1rem;
   border-radius: 6px;
   margin-bottom: 0.5rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease;
 }
 

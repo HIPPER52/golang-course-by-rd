@@ -1,85 +1,94 @@
 <template>
-    <div class="chat-box">
-      <h2>Chat</h2>
-      <div class="messages" ref="messagesContainer">
-        <div
-          v-for="msg in messages"
-          :key="msg.id"
-          :class="['message', msg.sender === 'client' ? 'from-client' : 'from-operator']"
-        >
-          {{ msg.text }}
-        </div>
+  <div class="chat-box">
+    <h2>Chat</h2>
+    <div
+      ref="messagesContainer"
+      class="messages"
+    >
+      <div
+        v-for="msg in messages"
+        :key="msg.id"
+        :class="['message', msg.sender === 'client' ? 'from-client' : 'from-operator']"
+      >
+        {{ msg.text }}
       </div>
-  
-      <form class="send-form" @submit.prevent="send">
-        <input v-model="text" placeholder="Type your message..." />
-        <button>Send</button>
-      </form>
     </div>
-  </template>
-  
-  <script setup>
-import { ref, onMounted, nextTick } from 'vue'
-import { connectSocket, sendSocketMessage, subscribe } from '../socket'
-import { fetchMessages } from '../services/messageService'
 
-const messages = ref([])
-const text = ref('')
-const messagesContainer = ref(null)
+    <form
+      class="send-form"
+      @submit.prevent="send"
+    >
+      <input
+        v-model="text"
+        placeholder="Type your message..."
+      >
+      <button>Send</button>
+    </form>
+  </div>
+</template>
 
-const client = JSON.parse(localStorage.getItem('client') || '{}')
-const dialogId = localStorage.getItem('dialog_id')
+<script setup>
+import { ref, onMounted, nextTick } from 'vue';
+import { connectSocket, sendSocketMessage, subscribe } from '../socket';
+import { fetchMessages } from '../services/messageService';
+
+const messages = ref([]);
+const text = ref('');
+const messagesContainer = ref(null);
+
+const client = JSON.parse(localStorage.getItem('client') || '{}');
+const dialogId = localStorage.getItem('dialog_id');
 
 function scrollToBottom() {
   if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
   }
 }
 
 function send() {
-  const content = text.value.trim()
-  if (!content) return
+  const content = text.value.trim();
+  if (!content) return;
 
   sendSocketMessage('message', {
     room_id: dialogId,
     text: content,
-  })
+  });
 
-  text.value = ''
+  text.value = '';
 }
 
 onMounted(async () => {
   try {
-    const data = await fetchMessages(dialogId)
-    messages.value = data.map(msg => ({
+    const data = await fetchMessages(dialogId);
+    messages.value = data.map((msg) => ({
       id: msg.id,
       text: msg.content,
-      sender: msg.sender_id === client.id ? 'client' : 'operator'
-    }))
-    nextTick(scrollToBottom)
+      sender: msg.sender_id === client.id ? 'client' : 'operator',
+    }));
+    nextTick(scrollToBottom);
   } catch (e) {
-    console.error('Failed to load history:', e)
+    console.error('Failed to load history:', e);
   }
 
-  connectSocket(client.id, dialogId)
+  connectSocket(client.id, dialogId);
 
   subscribe('message', (data) => {
-    if (data.room_id !== dialogId) return
+    if (data.room_id !== dialogId) return;
 
-    const isFromClient = data.sender_id === client.id
+    const isFromClient = data.sender_id === client.id;
 
     messages.value.push({
       id: Date.now(),
       text: data.text,
       sender: isFromClient ? 'client' : 'operator',
-    })
+    });
 
-    nextTick(scrollToBottom)
-  })
-})
+    nextTick(scrollToBottom);
+  });
+});
 </script>
-  
-  <style scoped>
+
+<style scoped>
 .chat-box {
   max-width: 600px;
   height: 80vh;
@@ -138,7 +147,7 @@ form {
   gap: 0.5rem;
 }
 
-input[type="text"] {
+input[type='text'] {
   flex: 1;
   padding: 0.5rem;
   border-radius: 6px;

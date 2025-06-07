@@ -1,5 +1,5 @@
-import { defineStore } from 'pinia'
-import { initSocket } from '@/services/socketService'
+import { defineStore } from 'pinia';
+import { initSocket } from '@/services/socketService';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -13,19 +13,19 @@ export const useUserStore = defineStore('user', {
   },
   actions: {
     setUser({ token, role, operator_id }) {
-      this.token = token
-      this.role = role
-      this.operatorId = operator_id
-      localStorage.setItem('token', token)
-      localStorage.setItem('role', role)
-      localStorage.setItem('operator_id', operator_id)
+      this.token = token;
+      this.role = role;
+      this.operatorId = operator_id;
+      localStorage.setItem('token', token);
+      localStorage.setItem('role', role);
+      localStorage.setItem('operator_id', operator_id);
 
-      initSocket(token)
+      initSocket(token);
     },
     logout() {
-      this.token = null
-      this.role = null
-      localStorage.clear()
+      this.token = null;
+      this.role = null;
+      localStorage.clear();
     },
   },
-})
+});

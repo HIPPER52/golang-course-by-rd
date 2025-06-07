@@ -33,49 +33,49 @@
     </form>
   </div>
 </template>
-  
-<script setup>
-import { ref, onMounted } from 'vue'
-import { fetchOperators, createOperator } from '../services/operatorService'
-import { formatDate } from '../utils/formatDate'
 
-const operators = ref([])
+<script setup>
+import { ref, onMounted } from 'vue';
+import { fetchOperators, createOperator } from '../services/operatorService';
+import { formatDate } from '../utils/formatDate';
+
+const operators = ref([]);
 const form = ref({
   username: '',
   email: '',
   password: '',
-  role: 'operator'
-})
+  role: 'operator',
+});
 
 async function loadOperators() {
-  operators.value = await fetchOperators()
+  operators.value = await fetchOperators();
 }
 
 async function submit() {
   const dto = {
-      username: form.value.username,
-      email: form.value.email,
-      password: form.value.password,
-      role: form.value.role
-  }
+    username: form.value.username,
+    email: form.value.email,
+    password: form.value.password,
+    role: form.value.role,
+  };
 
   try {
-      await createOperator(dto)
-      await loadOperators()
+    await createOperator(dto);
+    await loadOperators();
 
-      form.value.username = ''
-      form.value.email = ''
-      form.value.password = ''
-      form.value.role = 'operator'
+    form.value.username = '';
+    form.value.email = '';
+    form.value.password = '';
+    form.value.role = 'operator';
   } catch (err) {
-      const errorMessage = err?.response?.data?.error || 'Failed to create operator'
-      alert(`Error: ${errorMessage}`)
+    const errorMessage = err?.response?.data?.error || 'Failed to create operator';
+    alert(`Error: ${errorMessage}`);
   }
 }
 
-onMounted(loadOperators)
+onMounted(loadOperators);
 </script>
-  
+
 <style scoped>
 .operators-page {
   max-width: 800px;
@@ -89,7 +89,8 @@ onMounted(loadOperators)
   margin-bottom: 2rem;
 }
 
-.operator-table th, .operator-table td {
+.operator-table th,
+.operator-table td {
   padding: 0.75rem;
   border: 1px solid #ddd;
   text-align: left;
