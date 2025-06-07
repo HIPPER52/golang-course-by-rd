@@ -46,7 +46,7 @@ This will:
 
 ### Admin Credentials
 
-* **Email:** [admin@admin.com]
+* **Email:** admin@admin.com
 * **Password:** 12345678
 
 ## Development
