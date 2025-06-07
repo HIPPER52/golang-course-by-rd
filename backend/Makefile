@@ -39,3 +39,6 @@ clean:
 deps:
 	go mod tidy
 	go mod download
+
+test:
+	go test ./internal/services/...

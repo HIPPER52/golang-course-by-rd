@@ -4,15 +4,15 @@ import (
 	"context"
 	"course_project/internal/dto"
 	"course_project/internal/models"
+	"course_project/internal/repository"
 	"course_project/internal/repository/client"
 	"course_project/internal/services/logger"
-	"errors"
 	"fmt"
 	"github.com/oklog/ulid/v2"
 	"time"
 )
 
-var ErrClientAlreadyExists = errors.New("client already exists")
+var ErrClientAlreadyExists = repository.ErrClientAlreadyExists
 
 type Service struct {
 	repo client.Repository
@@ -29,7 +29,7 @@ func (s *Service) RegisterClient(ctx context.Context, dto dto.RegisterClientDTO)
 
 	count, err := s.repo.CountByPhone(ctx, dto.Phone)
 	if err != nil {
-		logger.Error(nil, fmt.Errorf("failed to check existing clients"))
+		logger.Error(ctx, fmt.Errorf("failed to check existing clients"))
 		return nil, fmt.Errorf("failed to check existing clients: %w", err)
 	}
 	if count > 0 {
@@ -45,7 +45,7 @@ func (s *Service) RegisterClient(ctx context.Context, dto dto.RegisterClientDTO)
 	}
 
 	if err := s.repo.Create(ctx, client); err != nil {
-		logger.Error(nil, fmt.Errorf("failed to insert client"))
+		logger.Error(ctx, fmt.Errorf("failed to insert client"))
 		return nil, fmt.Errorf("failed to insert client: %w", err)
 	}
 

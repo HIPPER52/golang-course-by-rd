@@ -9,4 +9,5 @@ var (
 	ErrActiveDialogExists    = errors.New("active dialog already exists")
 	ErrArchivedDialogExists  = errors.New("archived dialog already exists")
 	ErrQueuedDialogExists    = errors.New("queued dialog already exists")
+	ErrClientAlreadyExists   = errors.New("client already exists")
 )
