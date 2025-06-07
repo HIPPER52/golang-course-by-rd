@@ -40,13 +40,13 @@ This will:
 
 ### 2. Accessing the system
 
-* **Admin frontend:** [http://localhost:5173](http://localhost:5173)
-* **Client frontend:** [http://localhost:5174](http://localhost:5174)
+* **Admin frontend:** [http://localhost:3000](http://localhost:3000)
+* **Client frontend:** [http://localhost:3001](http://localhost:3001)
 * **Backend API (REST/WebSocket):** [http://localhost:8080](http://localhost:8080)
 
 ### Admin Credentials
 
-* **Email:** [admin@admin.com](mailto:admin@admin.com)
+* **Email:** [admin@admin.com]
 * **Password:** 12345678
 
 ## Development
