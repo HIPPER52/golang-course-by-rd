@@ -2,44 +2,32 @@ package mover
 
 import (
 	"context"
-	"course_project/internal/clients"
-	"course_project/internal/constants"
 	"course_project/internal/models"
+	"course_project/internal/repository/dialog/mover"
 	"course_project/internal/services/logger"
-	"errors"
 	"fmt"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Service struct {
-	queuedColl   *mongo.Collection
-	activeColl   *mongo.Collection
-	archivedColl *mongo.Collection
+	repo mover.Repository
 }
 
-func NewService(clients *clients.Clients) *Service {
-	return &Service{
-		queuedColl:   clients.Mongo.Db.Collection(constants.CollectionQueuedDialog),
-		activeColl:   clients.Mongo.Db.Collection(constants.CollectionActiveDialog),
-		archivedColl: clients.Mongo.Db.Collection(constants.CollectionArchivedDialog),
-	}
+func NewService(repo mover.Repository) *Service {
+	return &Service{repo: repo}
 }
 
-func (m *Service) TakeDialog(ctx context.Context, dialogID, operatorID string) error {
+func (s *Service) TakeDialog(ctx context.Context, dialogID, operatorID string) error {
 	logger.Info(ctx, "Operator "+operatorID+" is taking dialog: "+dialogID)
 
-	var queued models.QueuedDialog
-	filter := bson.M{"id": dialogID}
-	err := m.queuedColl.FindOne(ctx, filter).Decode(&queued)
+	queued, err := s.repo.FindQueuedByID(ctx, dialogID)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			logger.Error(ctx, fmt.Errorf("dialog %s not found in queue", dialogID))
-			return fmt.Errorf("dialog %q not found in queue", dialogID)
-		}
+		logger.Error(ctx, fmt.Errorf("failed to find queued dialog: %w", err))
 		return err
+	}
+	if queued == nil {
+		logger.Error(ctx, fmt.Errorf("dialog %s not found in queue", dialogID))
+		return fmt.Errorf("dialog %q not found in queue", dialogID)
 	}
 
 	active := models.ActiveDialog{
@@ -55,32 +43,31 @@ func (m *Service) TakeDialog(ctx context.Context, dialogID, operatorID string) e
 		},
 	}
 
-	if _, err := m.activeColl.InsertOne(ctx, active); err != nil {
+	if err := s.repo.InsertActive(ctx, active); err != nil {
 		logger.Error(ctx, fmt.Errorf("failed to insert active dialog: %w", err))
-		return fmt.Errorf("failed to insert ActiveDialog: %w", err)
+		return err
 	}
 
-	if _, err := m.queuedColl.DeleteOne(ctx, filter); err != nil {
-		logger.Error(ctx, fmt.Errorf("failed to delete from queued-dialog: %w", err))
-		return fmt.Errorf("failed to delete from queued-dialog: %w", err)
+	if err := s.repo.DeleteQueuedByID(ctx, dialogID); err != nil {
+		logger.Error(ctx, fmt.Errorf("failed to delete queued dialog: %w", err))
+		return err
 	}
 
 	logger.Info(ctx, "Dialog "+dialogID+" successfully taken by operator "+operatorID)
 	return nil
 }
 
-func (m *Service) CloseDialog(ctx context.Context, dialogID string) error {
+func (s *Service) CloseDialog(ctx context.Context, dialogID string) error {
 	logger.Info(ctx, "Closing dialog: "+dialogID)
 
-	var active models.ActiveDialog
-	filter := bson.M{"id": dialogID}
-	err := m.activeColl.FindOne(ctx, filter).Decode(&active)
+	active, err := s.repo.FindActiveByID(ctx, dialogID)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			logger.Error(ctx, fmt.Errorf("dialog %s not found in active", dialogID))
-			return fmt.Errorf("dialog %q not found in active", dialogID)
-		}
+		logger.Error(ctx, fmt.Errorf("failed to find active dialog: %w", err))
 		return err
+	}
+	if active == nil {
+		logger.Error(ctx, fmt.Errorf("dialog %s not found in active", dialogID))
+		return fmt.Errorf("dialog %q not found in active", dialogID)
 	}
 
 	archived := models.ArchivedDialog{
@@ -97,14 +84,14 @@ func (m *Service) CloseDialog(ctx context.Context, dialogID string) error {
 		},
 	}
 
-	if _, err := m.archivedColl.InsertOne(ctx, archived); err != nil {
-		logger.Error(ctx, fmt.Errorf("failed to insert archived-dialog: %w", err))
-		return fmt.Errorf("failed to insert archived-dialog: %w", err)
+	if err := s.repo.InsertArchived(ctx, archived); err != nil {
+		logger.Error(ctx, fmt.Errorf("failed to insert archived dialog: %w", err))
+		return err
 	}
 
-	if _, err := m.activeColl.DeleteOne(ctx, filter); err != nil {
-		logger.Error(ctx, fmt.Errorf("failed to delete from active-dialog: %w", err))
-		return fmt.Errorf("failed to delete from active-dialog: %w", err)
+	if err := s.repo.DeleteActiveByID(ctx, dialogID); err != nil {
+		logger.Error(ctx, fmt.Errorf("failed to delete active dialog: %w", err))
+		return err
 	}
 
 	logger.Info(ctx, "Dialog "+dialogID+" successfully archived and closed")

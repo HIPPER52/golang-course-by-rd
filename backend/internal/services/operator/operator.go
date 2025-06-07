@@ -2,105 +2,69 @@ package operator
 
 import (
 	"context"
-	"course_project/internal/clients"
-	"course_project/internal/constants"
 	"course_project/internal/dto"
 	"course_project/internal/models"
+	"course_project/internal/repository"
+	repo "course_project/internal/repository/operator"
 	"course_project/internal/services/logger"
 	"errors"
 	"fmt"
-	"github.com/oklog/ulid/v2"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"time"
 )
-
-var (
-	ErrOperatorAlreadyExists = errors.New("operator already exists")
-)
-
-type Operator models.Operator
 
 type Service struct {
-	collection *mongo.Collection
+	repo repo.Repository
 }
 
-func NewService(clients *clients.Clients) *Service {
-	return &Service{
-		collection: clients.Mongo.Db.Collection(constants.CollectionOperators),
-	}
+func NewService(repo repo.Repository) *Service {
+	return &Service{repo: repo}
 }
 
-func (s *Service) AddOperator(ctx context.Context, dto dto.CreateOperatorDTO) (*Operator, error) {
+func (s *Service) AddOperator(ctx context.Context, dto dto.CreateOperatorDTO) (*models.Operator, error) {
 	logger.Info(ctx, "Adding new operator: "+dto.Email)
 
-	t := time.Now().UTC()
-
-	op := &Operator{
-		ID:        ulid.MustNew(uint64(t.Unix()), ulid.DefaultEntropy()).String(),
-		Username:  dto.Username,
-		Email:     dto.Email,
-		PwdHash:   dto.PwdHash,
-		Role:      dto.Role,
-		CreatedAt: t,
-	}
-
-	_, err := s.collection.InsertOne(ctx, op)
-	if mongo.IsDuplicateKeyError(err) {
-		logger.Info(ctx, "Operator already exists: "+dto.Email)
-		return nil, ErrOperatorAlreadyExists
-	}
+	op, err := s.repo.AddOperator(ctx, dto)
 	if err != nil {
-		logger.Error(ctx, fmt.Errorf("failed to insert Operator: %w", err))
-		return nil, fmt.Errorf("failed to insert Operator: %w", err)
+		if errors.Is(err, repository.ErrOperatorAlreadyExists) {
+			logger.Info(ctx, "Operator already exists: "+dto.Email)
+		} else {
+			logger.Error(ctx, fmt.Errorf("failed to add operator: %w", err))
+		}
+		return nil, err
 	}
 
 	logger.Info(ctx, "Operator successfully added: "+op.ID)
 	return op, nil
 }
 
-func (s *Service) GetOperatorByEmail(ctx context.Context, email string) (*Operator, error) {
+func (s *Service) GetOperatorByEmail(ctx context.Context, email string) (*models.Operator, error) {
 	logger.Info(ctx, "Fetching operator by email: "+email)
 
-	var op *Operator
-	err := s.collection.FindOne(ctx, bson.M{"email": email}).Decode(&op)
+	op, err := s.repo.GetOperatorByEmail(ctx, email)
 	if err != nil {
-		logger.Error(ctx, fmt.Errorf("failed to find Operator by Email: %w", err))
-		return nil, fmt.Errorf("failed to find Operator by Email: %w", err)
+		logger.Error(ctx, fmt.Errorf("failed to get operator by email: %w", err))
+		return nil, err
 	}
 	return op, nil
 }
 
-func (s *Service) GetOperatorByID(ctx context.Context, id string) (*Operator, error) {
+func (s *Service) GetOperatorByID(ctx context.Context, id string) (*models.Operator, error) {
 	logger.Info(ctx, "Fetching operator by ID: "+id)
 
-	var op *Operator
-	err := s.collection.FindOne(ctx, bson.M{"id": id}).Decode(&op)
+	op, err := s.repo.GetOperatorByID(ctx, id)
 	if err != nil {
-		logger.Error(ctx, fmt.Errorf("failed to find Operator by ID: %w", err))
-		return nil, fmt.Errorf("failed to find Operator by ID: %w", err)
+		logger.Error(ctx, fmt.Errorf("failed to get operator by ID: %w", err))
+		return nil, err
 	}
 	return op, nil
 }
 
-func (s *Service) GetAllOperators(ctx context.Context) ([]*Operator, error) {
+func (s *Service) GetAllOperators(ctx context.Context) ([]*models.Operator, error) {
 	logger.Info(ctx, "Fetching all operators")
 
-	cursor, err := s.collection.Find(ctx, bson.M{})
+	ops, err := s.repo.GetAllOperators(ctx)
 	if err != nil {
-		logger.Error(ctx, fmt.Errorf("failed to fetch operators: %w", err))
-		return nil, fmt.Errorf("failed to fetch operators: %w", err)
+		logger.Error(ctx, fmt.Errorf("failed to get all operators: %w", err))
+		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	var result []*Operator
-	for cursor.Next(ctx) {
-		var op Operator
-		if err := cursor.Decode(&op); err != nil {
-			logger.Error(ctx, fmt.Errorf("failed to decode operator: %w", err))
-			return nil, err
-		}
-		result = append(result, &op)
-	}
-	return result, nil
+	return ops, nil
 }

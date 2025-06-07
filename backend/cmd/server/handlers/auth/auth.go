@@ -4,8 +4,9 @@ import (
 	"course_project/cmd/server/parser"
 	"course_project/internal/constants/roles"
 	"course_project/internal/dto"
+	"course_project/internal/models"
+	"course_project/internal/repository"
 	"course_project/internal/services"
-	"course_project/internal/services/operator"
 	"errors"
 	"github.com/gofiber/fiber/v2"
 )
@@ -28,7 +29,7 @@ type SignUpRequestBody struct {
 }
 
 type SignUpResponse200Body struct {
-	Operator *operator.Operator `json:"operator"`
+	Operator *models.Operator `json:"operator"`
 }
 
 // SignUp godoc
@@ -64,7 +65,7 @@ func (h *Handler) SignUp(ctx *fiber.Ctx) error {
 
 	opr, err := h.svc.Operator.AddOperator(ctx.Context(), *usr)
 
-	if errors.Is(err, operator.ErrOperatorAlreadyExists) {
+	if errors.Is(err, repository.ErrOperatorAlreadyExists) {
 		return fiber.NewError(fiber.StatusConflict, err.Error())
 	}
 	if err != nil {

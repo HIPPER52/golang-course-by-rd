@@ -3,8 +3,8 @@ package operator
 import (
 	"course_project/internal/constants"
 	"course_project/internal/dto"
+	"course_project/internal/repository"
 	"course_project/internal/services"
-	"course_project/internal/services/operator"
 	"errors"
 	"github.com/gofiber/fiber/v2"
 )
@@ -98,7 +98,7 @@ func (h *Handler) CreateOperator(ctx *fiber.Ctx) error {
 
 	op, err := h.svc.Operator.AddOperator(ctx.Context(), dto)
 	if err != nil {
-		if errors.Is(err, operator.ErrOperatorAlreadyExists) {
+		if errors.Is(err, repository.ErrOperatorAlreadyExists) {
 			return fiber.NewError(fiber.StatusConflict, "Operator already exists")
 		}
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
