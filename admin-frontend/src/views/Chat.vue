@@ -124,7 +124,7 @@ async function handleSocketEvent(payload) {
 
       dialogPanelRef.value?.appendMessage?.({
         id: Date.now(),
-        sender: data.sender_id === operatorId ? 'operator' : 'client',
+        sender: data.type === 'system' ? 'system' : (data.sender_id === operatorId ? 'operator' : 'client'),
         text: data.text,
       });
       break;

@@ -8,7 +8,14 @@
       <div
         v-for="msg in messages"
         :key="msg.id"
-        :class="['message', msg.sender === 'client' ? 'from-client' : 'from-operator']"
+        :class="[
+          'message',
+          msg.sender === 'client'
+            ? 'from-client'
+            : msg.sender === 'operator'
+              ? 'from-operator'
+              : 'system-message'
+        ]"
       >
         {{ msg.text }}
       </div>
@@ -61,9 +68,9 @@ onMounted(async () => {
   try {
     const data = await fetchMessages(dialogId);
     messages.value = data.map((msg) => ({
-      id: msg.id,
-      text: msg.content,
-      sender: msg.sender_id === client.id ? 'client' : 'operator',
+        id: msg.id,
+        text: msg.content,
+        sender: msg.type === 'system' ? 'system' : (msg.sender_id === client.id ? 'client' : 'operator'),
     }));
     nextTick(scrollToBottom);
   } catch (e) {
@@ -78,9 +85,9 @@ onMounted(async () => {
     const isFromClient = data.sender_id === client.id;
 
     messages.value.push({
-      id: Date.now(),
-      text: data.text,
-      sender: isFromClient ? 'client' : 'operator',
+        id: Date.now(),
+        text: data.text,
+        sender: data.type === 'system' ? 'system' : (isFromClient ? 'client' : 'operator'),
     });
 
     nextTick(scrollToBottom);
@@ -195,5 +202,16 @@ button:hover {
 
 .send-form button:hover {
   background-color: #0056b3;
+}
+
+.system-message {
+  align-self: center;
+  background-color: transparent;
+  color: #888;
+  font-style: italic;
+  font-size: 0.9rem;
+  padding: 0.3rem 0;
+  border: none;
+  box-shadow: none;
 }
 </style>

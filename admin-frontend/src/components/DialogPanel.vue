@@ -5,11 +5,18 @@
 
       <div ref="messagesContainer" class="messages">
         <div
-          v-for="msg in messages"
-          :key="msg.id"
-          :class="['message', msg.sender === 'operator' ? 'from-operator' : 'from-client']"
-        >
-          <p>{{ msg.text }}</p>
+            v-for="msg in messages"
+            :key="msg.id"
+            :class="[
+                'message',
+                msg.sender === 'operator'
+                ? 'from-operator'
+                : msg.sender === 'client'
+                    ? 'from-client'
+                    : 'system-message'
+            ]"
+            >
+            <p>{{ msg.text }}</p>
         </div>
       </div>
 
@@ -67,7 +74,7 @@ async function loadHistory() {
   messages.value = rawMessages.map((msg) => ({
     id: msg.id,
     text: msg.content,
-    sender: msg.sender_id === operatorId ? 'operator' : 'client',
+    sender: msg.type === 'system' ? 'system' : (msg.sender_id === operatorId ? 'operator' : 'client'),
   }));
 
   nextTick(scrollToBottom);
@@ -158,6 +165,15 @@ const closeDialog = () => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.system-message {
+  align-self: center;
+  background-color: transparent;
+  color: #888;
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
 }
 
 .from-operator {

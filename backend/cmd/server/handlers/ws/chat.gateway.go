@@ -218,6 +218,8 @@ func (g *ChatGateway) handleDialogTaken(conn *websocket.Conn, data json.RawMessa
 	bytes, _ := json.Marshal(out)
 	g.roomManager.BroadcastMessage(payload.RoomID, websocket.TextMessage, bytes)
 	g.roomManager.BroadcastMessage(wsevent.RoomOperators, websocket.TextMessage, bytes)
+
+	g.sendSystemMessage(context.Background(), dialog.ID, "Operator took the dialog")
 }
 
 func (g *ChatGateway) handleDialogClosed(conn *websocket.Conn, data json.RawMessage) {
@@ -243,9 +245,38 @@ func (g *ChatGateway) handleDialogClosed(conn *websocket.Conn, data json.RawMess
 			"info":    payload.Info,
 		},
 	}
+
 	msgBytes, _ := json.Marshal(msg)
-
 	g.roomManager.BroadcastMessage(payload.RoomID, websocket.TextMessage, msgBytes)
-
 	g.roomManager.BroadcastMessage(wsevent.RoomOperators, websocket.TextMessage, msgBytes)
+
+	g.sendSystemMessage(context.Background(), payload.RoomID, "Operator closed the dialog")
+}
+
+func (g *ChatGateway) sendSystemMessage(ctx context.Context, roomID, content string) {
+	sysMsg := models.Message{
+		ID:       ulid.Make().String(),
+		RoomID:   roomID,
+		SenderID: "SYSTEM",
+		Content:  content,
+		SentAt:   time.Now().UTC(),
+		Type:     message.SystemMessage,
+	}
+
+	if err := g.svc.Producer.Publish(consumer.TypeSaveMessage, sysMsg); err != nil {
+		logger.Error(ctx, fmt.Errorf("failed to publish system message: %v", err))
+	}
+
+	out := map[string]interface{}{
+		"event": wsevent.Message,
+		"data": map[string]string{
+			"room_id":   roomID,
+			"text":      sysMsg.Content,
+			"sender_id": "SYSTEM",
+			"type":      string(message.SystemMessage),
+		},
+	}
+
+	bytes, _ := json.Marshal(out)
+	g.roomManager.BroadcastMessage(roomID, websocket.TextMessage, bytes)
 }
