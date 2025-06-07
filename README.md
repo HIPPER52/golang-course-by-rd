@@ -57,7 +57,7 @@ You can work with services individually outside Docker:
 
 ```bash
 cd backend
-go run main.go
+make up
 ```
 
 ### Admin Frontend
