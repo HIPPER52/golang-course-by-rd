@@ -1,55 +1,93 @@
 # Golang Support Chat System
 
-This is a support chat system built in Go, Vue.js, and MongoDB. It includes a backend service, an admin interface, and a client-facing interface.
+This is a support chat system built with Go, Vue.js, MongoDB, and RabbitMQ. The system includes:
+
+* A backend API and WebSocket server written in Go (Fiber v3)
+* An admin panel frontend (Vue 3) for managing dialogs and operators
+* A client-facing frontend (Vue 3) for starting and continuing chats
 
 ## Features
 
-- Real-time chat using WebSocket
-- Dialog queue management (Queued → Active → Archived)
-- Role-based access control (Admin and Operator)
-- Admin dashboard to manage users and view statistics
-- Message persistence via MongoDB and RabbitMQ
-- Dialog history and reporting
-- Basic statistics on operator performance
+* Real-time messaging with WebSocket
+* Dialog queue management: queued → active → archived
+* Admin/Operator roles with different permissions
+* Chat history browsing
+* Operator performance statistics
+* System messages (e.g., dialog taken/closed)
 
-## Services
+## Requirements
 
-### 1. Backend
+* Go (1.21+ recommended)
+* Docker & Docker Compose
+* Make
+* Node.js (18+) and npm (9+) for frontend apps
 
-- Built with Go (Fiber v2)
-- MongoDB for persistence
-- RabbitMQ for message queueing
-- REST API for admin and client services
-- WebSocket gateway for real-time communication
+## Getting Started
 
-### 2. Admin Frontend
+### 1. Setup
 
-- Built with Vue 3
-- Role-based dashboard for admins and operators
-- Operators can view, pick, and respond to dialogs
-- Admins can manage users and see dialog stats
-
-### 3. Client Frontend
-
-- Simple chatbox interface for clients
-- Connects to backend via WebSocket
-- Messages saved and visible to operators
-
-## Prerequisites
-
-Make sure you have the following installed:
-
-- Docker
-- Docker Compose
-- Make
-- Go (for development)
-- Node.js and npm (for frontend development)
-
-## Setup Instructions
-
-1. Clone the repository.
-2. Run the following commands to set up the environment:
+To prepare the environment, run:
 
 ```bash
 make setup-envs
 make up
+```
+
+This will:
+
+* Create necessary `.env` files from examples
+* Launch MongoDB, RabbitMQ, and all services via Docker Compose
+
+### 2. Accessing the system
+
+* **Admin frontend:** [http://localhost:5173](http://localhost:5173)
+* **Client frontend:** [http://localhost:5174](http://localhost:5174)
+* **Backend API (REST/WebSocket):** [http://localhost:8080](http://localhost:8080)
+
+### Admin Credentials
+
+* **Email:** [admin@admin.com](mailto:admin@admin.com)
+* **Password:** 12345678
+
+## Development
+
+You can work with services individually outside Docker:
+
+### Backend
+
+```bash
+cd backend
+go run main.go
+```
+
+### Admin Frontend
+
+```bash
+cd admin-frontend
+npm install
+npm run dev
+```
+
+### Client Frontend
+
+```bash
+cd client-frontend
+npm install
+npm run dev
+```
+
+## Project Structure
+
+```
+.
+├── backend/             # Go backend (Fiber)
+├── admin-frontend/      # Admin interface (Vue 3)
+├── client-frontend/     # Client chat UI (Vue 3)
+├── docker-compose.yml   # Docker services: MongoDB, RabbitMQ, backend, frontends
+├── Makefile             # Development commands
+├── README.md            # This file
+```
+
+## License
+
+MIT
