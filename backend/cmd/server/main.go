@@ -27,12 +27,16 @@ import (
 	"course_project/internal/services"
 	"course_project/internal/services/logger"
 	"fmt"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/swagger"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/swagger"
 )
 
 func main() {
@@ -51,6 +55,13 @@ func main() {
 	mdlwrs := middlewares.NewMiddlewares(svcs)
 
 	app := fiber.New()
+
+	app.Use(recover.New())
+
+	app.Use(limiter.New(limiter.Config{
+		Max:        100,
+		Expiration: 1 * time.Minute,
+	}))
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
