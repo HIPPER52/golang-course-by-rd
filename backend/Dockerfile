@@ -7,7 +7,9 @@ RUN --mount=type=cache,id=gomod,target=/go/pkg/mod \
     --mount=type=cache,id=gobuild,target=/root/.cache/go-build \
     go mod download
 
-COPY . .
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
+COPY go.mod go.sum ./
 
 RUN --mount=type=cache,id=gobuild,target=/root/.cache/go-build \
     go build -o /tmp/bin/server ./cmd/server && \
