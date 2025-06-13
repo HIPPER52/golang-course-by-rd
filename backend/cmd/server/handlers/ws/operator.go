@@ -2,8 +2,7 @@ package ws
 
 import (
 	"context"
-	"course_project/internal/constants"
-	"course_project/internal/constants/roles"
+	"course_project/cmd/server/utils"
 	ws_event "course_project/internal/constants/ws"
 	"course_project/internal/services"
 	"course_project/internal/services/logger"
@@ -31,16 +30,10 @@ func NewOperatorHandler(svcs *services.Services, mgr *ConnectionManager, rooms *
 
 func (h *OperatorHandler) Handle() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		userIDRaw := ctx.Locals(constants.CONTEXT_USER_ID)
-		roleRaw := ctx.Locals(constants.CONTEXT_ROLE)
-
-		userIDPtr, ok1 := userIDRaw.(*string)
-		roleVal, ok2 := roleRaw.(roles.Role)
-		if !ok1 || !ok2 || userIDPtr == nil {
+		userID, role, err := utils.GetUserIDAndRole(ctx)
+		if err != nil {
 			return ctx.SendStatus(fiber.StatusUnauthorized)
 		}
-		userID := *userIDPtr
-		role := roleVal
 
 		return websocket.New(func(conn *websocket.Conn) {
 			h.mgr.AddConnection(userID, string(role), conn)
