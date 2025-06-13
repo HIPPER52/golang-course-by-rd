@@ -8,6 +8,7 @@ import (
 	"course_project/internal/services/logger"
 	"errors"
 	"fmt"
+	"log/slog"
 )
 
 var (
@@ -23,7 +24,7 @@ func NewService(repo repo.Repository) *Service {
 }
 
 func (s *Service) Add(ctx context.Context, dialog *models.ArchivedDialog) error {
-	logger.Info(ctx, "Archiving dialog: "+dialog.ID)
+	logger.Info(ctx, "Archiving dialog", slog.String("dialog_id", dialog.ID))
 
 	err := s.repo.Add(ctx, dialog)
 	if errors.Is(err, ErrArchivedDialogExists) {
@@ -37,7 +38,7 @@ func (s *Service) Add(ctx context.Context, dialog *models.ArchivedDialog) error 
 }
 
 func (s *Service) FindByOperator(ctx context.Context, operatorID string) ([]models.ArchivedDialog, error) {
-	logger.Info(ctx, "Finding archived dialogs by operator: "+operatorID)
+	logger.Info(ctx, "Finding archived dialogs by operator", slog.String("operator_id", operatorID))
 
 	dialogs, err := s.repo.FindByOperator(ctx, operatorID)
 	if err != nil {
@@ -51,7 +52,9 @@ func (s *Service) CountByOperator(ctx context.Context, operatorID string) (int, 
 
 	count, err := s.repo.CountByOperator(ctx, operatorID)
 	if err != nil {
-		logger.Error(ctx, fmt.Errorf("failed to count archived dialogs: %w", err))
+		logger.Error(ctx, fmt.Errorf("failed to count archived dialogs: %w", err), 
+			slog.String("operator_id", operatorID),
+		)
 	}
 	return count, err
 }
