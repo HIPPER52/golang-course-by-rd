@@ -11,7 +11,7 @@ import (
 )
 
 type AuthClaims struct {
-	UserID string     `json:"sub"`
+	UserID *string    `json:"sub"`
 	Role   roles.Role `json:"role"`
 	jwt.RegisteredClaims
 }
@@ -20,7 +20,7 @@ func (s *Service) CreateAuthToken(userId string, role roles.Role) (*string, erro
 	utcNow := time.Now().UTC()
 
 	claims := AuthClaims{
-		UserID: userId,
+		UserID: &userId,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   userId,

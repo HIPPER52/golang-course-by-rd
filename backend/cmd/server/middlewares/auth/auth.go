@@ -41,7 +41,7 @@ func (m *Middleware) Handle(ctx *fiber.Ctx) error {
 
 	ctx.Locals(ctxUserIdKey, claims.UserID)
 	ctx.Locals(ctxRoleKey, claims.Role)
-	logger.SetLoggerAttrs(ctx, slog.String(ctxUserIdKey, claims.UserID))
+	logger.SetLoggerAttrs(ctx, slog.String(ctxUserIdKey, *claims.UserID))
 
 	return ctx.Next()
 }
