@@ -7,6 +7,7 @@ import (
 	"course_project/internal/models"
 	"course_project/internal/services"
 	"encoding/json"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/oklog/ulid/v2"
@@ -67,7 +68,10 @@ func (h *Handler) Register(ctx *fiber.Ctx) error {
 			"client_ip":    dialog.ClientIP,
 		},
 	}
-	msg, _ := json.Marshal(event)
+	msg, err := json.Marshal(event)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "failed to marshal WebSocket event")
+	}
 	h.wsHandler.Rooms.BroadcastMessage(wsevent.RoomOperators, websocket.TextMessage, msg)
 
 	return ctx.Status(fiber.StatusCreated).JSON(fiber.Map{
