@@ -57,14 +57,14 @@ func (h *Handler) SignUp(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	usr := &dto.CreateOperatorDTO{
+	usr := dto.CreateOperatorDTO{
 		Username: req.Username,
 		Email:    req.Email,
 		PwdHash:  pwdHash,
 		Role:     req.Role,
 	}
 
-	opr, err := h.svc.Operator.AddOperator(ctx.Context(), *usr)
+	opr, err := h.svc.Operator.AddOperator(ctx.Context(), usr)
 
 	if errors.Is(err, repository.ErrOperatorAlreadyExists) {
 		return fiber.NewError(fiber.StatusConflict, err.Error())
