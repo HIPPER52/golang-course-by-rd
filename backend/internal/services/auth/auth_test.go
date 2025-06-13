@@ -2,9 +2,11 @@ package auth_test
 
 import (
 	"course_project/internal/config"
+	"course_project/internal/constants/roles"
 	"course_project/internal/services/auth"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func mockConfig() *config.Config {
@@ -45,13 +47,14 @@ func TestCreateAndVerifyAuthToken(t *testing.T) {
 	service := auth.NewService(mockConfig())
 
 	userID := "user-123"
-	token, err := service.CreateAuthToken(userID)
+	userRole := roles.Operator
+	token, err := service.CreateAuthToken(userID, userRole)
 	assert.NoError(t, err)
 	assert.NotNil(t, token)
 
 	subject, err := service.VerifyAuthToken(*token)
 	assert.NoError(t, err)
-	assert.Equal(t, userID, *subject)
+	assert.Equal(t, userID, subject.UserID)
 }
 
 func TestVerifyAuthToken_Invalid(t *testing.T) {

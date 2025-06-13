@@ -4,8 +4,9 @@ import (
 	"course_project/cmd/server/middlewares/logger"
 	"course_project/internal/constants"
 	"course_project/internal/services"
-	"github.com/gofiber/fiber/v2"
 	"log/slog"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 const headerAuthToken = constants.HEADER_AUTH_TOKEN
@@ -28,18 +29,19 @@ func (m *Middleware) Handle(ctx *fiber.Ctx) error {
 		token = ctx.Query("token")
 	}
 
-	userID, err := m.svc.Auth.VerifyAuthToken(token)
+	_, err := m.svc.Auth.VerifyAuthToken(token)
 	if err != nil {
 		return ctx.SendStatus(fiber.StatusUnauthorized)
 	}
 
-	usr, err := m.svc.Operator.GetOperatorByID(ctx.Context(), *userID)
+	claims, err := m.svc.Auth.VerifyAuthToken(token)
 	if err != nil {
-		return ctx.SendStatus(fiber.StatusInternalServerError)
+		return ctx.SendStatus(fiber.StatusUnauthorized)
 	}
 
-	ctx.Locals(ctxUserIdKey, userID)
-	ctx.Locals(ctxRoleKey, usr.Role)
-	logger.SetLoggerAttrs(ctx, slog.String(ctxUserIdKey, *userID))
+	ctx.Locals(ctxUserIdKey, claims.UserID)
+	ctx.Locals(ctxRoleKey, claims.Role)
+	logger.SetLoggerAttrs(ctx, slog.String(ctxUserIdKey, claims.UserID))
+
 	return ctx.Next()
 }

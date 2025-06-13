@@ -8,6 +8,7 @@ import (
 	"course_project/internal/repository"
 	"course_project/internal/services"
 	"errors"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -121,7 +122,7 @@ func (h *Handler) SignIn(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized)
 	}
 
-	token, err := h.svc.Auth.CreateAuthToken(oprtr.ID)
+	token, err := h.svc.Auth.CreateAuthToken(oprtr.ID, oprtr.Role)
 	if err != nil {
 		return fiber.NewError(fiber.StatusUnauthorized)
 	}
