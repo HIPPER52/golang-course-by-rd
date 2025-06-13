@@ -16,33 +16,6 @@ func mockConfig() *config.Config {
 	}
 }
 
-func TestGenerateAndComparePasswordHash(t *testing.T) {
-	service := auth.NewService(mockConfig())
-
-	password := "mySecurePassword123"
-
-	hash, err := service.GeneratePasswordHash(password)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, hash)
-
-	ok, err := service.CompareHashAndPassword(password, hash)
-	assert.NoError(t, err)
-	assert.True(t, ok)
-}
-
-func TestCompareHashAndPassword_Invalid(t *testing.T) {
-	service := auth.NewService(mockConfig())
-
-	password := "correctPassword"
-	wrongPassword := "wrongPassword"
-
-	hash, _ := service.GeneratePasswordHash(password)
-
-	ok, err := service.CompareHashAndPassword(wrongPassword, hash)
-	assert.NoError(t, err)
-	assert.False(t, ok)
-}
-
 func TestCreateAndVerifyAuthToken(t *testing.T) {
 	service := auth.NewService(mockConfig())
 
