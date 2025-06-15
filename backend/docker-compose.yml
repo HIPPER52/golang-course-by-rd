@@ -1,0 +1,60 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: deploy
+    container_name: support-chat-backend
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+      - rabbitmq
+    healthcheck:
+      test: [ "CMD", "/server", "-ping" ]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: consumer
+    container_name: support-chat-consumer
+    command: [ "/usr/local/bin/server", "-consumer" ]
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+      - rabbitmq
+
+  mongo:
+    image: mongo:7.0
+    container_name: support-chat-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+      MONGO_INITDB_DATABASE: support
+    volumes:
+      - mongo-data:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: support-chat-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+volumes:
+  mongo-data:
